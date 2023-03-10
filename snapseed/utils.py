@@ -52,7 +52,7 @@ def expr_auroc_over_groups(expr, groups):
     return auroc, frac_nz
 
 
-def compute_auc_expr(adata, group_name, features=None):
+def auc_expr(adata, group_name, features=None):
     """Computes AUROC and fraction nonzero for each gene in an AnnData object."""
     # Turn string groups into integers
     le = preprocessing.LabelEncoder()
@@ -68,7 +68,7 @@ def compute_auc_expr(adata, group_name, features=None):
     return dict(frac_nonzero=frac_nonzero, auroc=auroc)
 
 
-compute_auc_expr(adata, "res.0.6")
+auc_expr(adata, "res.0.6")
 
 # Jax 2d array
 # Test groups
