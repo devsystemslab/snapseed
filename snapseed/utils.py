@@ -93,4 +93,4 @@ def get_expr(adata, features=None, layer=None):
         expr = jnp.array(to_dense(adata[:, features].layers[layer]))
     else:
         expr = jnp.array(to_dense(adata[:, features].X))
-    return expr
+    return expr, features

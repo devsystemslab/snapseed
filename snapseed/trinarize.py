@@ -1,30 +1,59 @@
-import pandas as pd
-
+import numba
 import jax
 from jax import numpy as jnp
+import pandas as pd
+import numpy as np
+
 
 from jax.scipy.special import gammaln, betainc, betaln
 
-from .utils import auc_expr, dict_to_binary
+from .utils import dict_to_binary
 
 
-def trinarize(expr, group_name, marker_dict, f=0.2, layer=None):
-    # Turn string groups into integers
+def annotate_cytograph(adata, marker_dict, group_name, layer=None, f=0.2):
+    """Annotate clusters based on trinarization of marker gene expression."""
+    # Reformat marker_dict into binary matrix
+    marker_mat = dict_to_binary(marker_dict)
+    # Compute AUROC and fraction nonzero for marker features
+    features = marker_mat.columns
+    expr, features = get_expr(adata, features=features, layer=layer)
+    marker_mat = marker_mat.loc[:, features]
+    marker_array = marker_mat.values
+    #
     le = preprocessing.LabelEncoder()
     le.fit(adata.obs[group_name])
     groups = jnp.array(le.transform(adata.obs[group_name]))
     n_groups = int(groups.max() + 1)
-    # Subset features from marker_dict items
-    features = set([k for v in marker_dict.values() for k in v])
-    features = list(features & set(adata.var_names))
-    # get expression matrix
-    if layer is not None:
-        expr = jnp.array(to_dense(adata[:, features].layers[layer]))
-    else:
-        expr = jnp.array(to_dense(adata[:, features].X))
     # trinatize
-    trinary_prob = betabinomial_trinarize_array(expr, groups, n_groups, f)
-    return trinary_prob
+    trinaries = betabinomial_trinarize_array(expr, groups, n_groups, f)
+    annot_probs = get_annot_probs(np.array(trinaries), marker_array)
+    annot_dict = {}
+    annot_scores = np.zeros(annot_probs.shape[1])
+    for i in range(annot_probs.shape[1]):
+        annot_dict[le.classes_[i]] = marker_mat.index[np.argmax(annot_probs[:, i])]
+        annot_scores[i] = np.max(annot_probs[:, i])
+    annot_tags = [
+        tag if isinstance(tag, str) else ";".join(tag) for tag in annot_dict.values()
+    ]
+    assign_df = pd.DataFrame(
+        {"class": annot_tags, "score": annot_scores},
+        index=annot_dict.keys(),
+    )
+    return assign_df
+
+
+@numba.jit
+def get_annot_probs(trinaries, marker_array):
+    """Compute the annotaion probability foea each cell type."""
+    group_probs = np.zeros((marker_array.shape[0], trinaries.shape[1]))
+    for i in np.arange(trinaries.shape[1]):
+        for j in np.arange(marker_array.shape[0]):
+            marker_trinaries = trinaries[:, i][np.nonzero(marker_array[j, :])]
+            if marker_trinaries.shape[0] == 0:
+                group_probs[j, i] = 0
+            else:
+                group_probs[j, i] = np.mean(marker_trinaries)
+    return group_probs
 
 
 @partial(jax.jit, static_argnames=["n_groups", "f"])
@@ -101,3 +130,5 @@ marker_dict = dict(
     Mesencephalon=["OTX2", "LHX1", "LHX5", "ZIC1"],
     Rhombencephalon=["HOXB2"],
 )
+
+annotate_cytograph(adata, marker_dict, group_name, layer="counts", f=0.2)
