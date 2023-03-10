@@ -61,6 +61,8 @@ def auc_expr(anndata, group_name, features=None):
     groups = jnp.array(le.transform(anndata.obs[group_name]))
     # Select features
     if features is not None:
+        # intersect with adata features
+        features = list(set(features) & set(anndata.var_names))
         expr = jnp.array(to_dense(anndata[:, features].X))
     else:
         expr = jnp.array(to_dense(anndata.X))
