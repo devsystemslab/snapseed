@@ -12,6 +12,12 @@ to_dense = lambda x: x.toarray() if hasattr(x, "toarray") else x
 
 
 @jax.jit
+@partial(jax.vmap, in_axes=[None, 0])
+def masked_max(x, mask):
+    return jnp.max(x * mask, axis=1)
+
+
+@jax.jit
 def frac_nonzero(x, axis=0):
     return jnp.mean(x > 0, axis=axis)
 
@@ -44,27 +50,41 @@ def jit_auroc(expr, groups):
 
 def expr_auroc_over_groups(expr, groups):
     """Computes AUROC for each group separately."""
-    auroc = jnp.zeros((expr.shape[1], groups.max() + 1))
-    frac_nz = jnp.zeros((expr.shape[1], groups.max() + 1))
+    auroc = jnp.zeros((groups.max() + 1, expr.shape[1]))
+    frac_nz = jnp.zeros((groups.max() + 1, expr.shape[1]))
     for group in range(groups.max() + 1):
-        auroc = auroc.at[:, group].set(jit_auroc(expr, groups == group))
-        frac_nz = frac_nz.at[:, group].set(frac_nonzero(expr[groups == group, :]))
+        auroc = auroc.at[group, :].set(jit_auroc(expr, groups == group))
+        frac_nz = frac_nz.at[group, :].set(frac_nonzero(expr[groups == group, :]))
     return auroc, frac_nz
 
 
-def auc_expr(anndata, group_name, features=None):
-    """Computes AUROC and fraction nonzero for each gene in an AnnData object."""
+def auc_expr(adata, group_name, features=None):
+    """Computes AUROC and fraction nonzero for each gene in an adata object."""
     # Turn string groups into integers
     le = preprocessing.LabelEncoder()
-    le.fit(anndata.obs[group_name])
+    le.fit(adata.obs[group_name])
     # Compute AUROC and fraction nonzero
-    groups = jnp.array(le.transform(anndata.obs[group_name]))
+    groups = jnp.array(le.transform(adata.obs[group_name]))
     # Select features
     if features is not None:
         # intersect with adata features
-        features = list(set(features) & set(anndata.var_names))
-        expr = jnp.array(to_dense(anndata[:, features].X))
+        features = list(set(features) & set(adata.var_names))
+        expr = jnp.array(to_dense(adata[:, features].X))
     else:
-        expr = jnp.array(to_dense(anndata.X))
+        expr = jnp.array(to_dense(adata.X))
     auroc, frac_nonzero = expr_auroc_over_groups(expr, groups)
-    return dict(frac_nonzero=frac_nonzero, auroc=auroc)
+    return dict(
+        frac_nonzero=frac_nonzero,
+        auroc=auroc,
+        features=features,
+        groups=le.classes_,
+    )
+
+
+def dict_to_binary(d):
+    df = pd.concat(
+        [pd.Series(v, name=k).astype(str) for k, v in marker_dict.items()],
+        axis=1,
+    )
+    marker_mat = pd.get_dummies(df.stack()).groupby(level=1).sum().clip(upper=1)
+    return marker_mat

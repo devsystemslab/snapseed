@@ -1,11 +1,21 @@
+import pandas as pd
+
 import jax
 from jax import numpy as jnp
 
+from .utils import auc_expr, dict_to_binary
 
-def annotate(adata, marker_list, group_name, method="snap"):
+
+def annotate(adata, marker_dict, group_name, method="snap"):
     """Annotate clusters with marker genes."""
     if method == "snap":
-        return annotate_snap(adata, marker_list, group_name)
+        assignments = annotate_snap(adata, marker_dict, group_name)
+    if method == "cytograph":
+        raise NotImplementedError("Cytograph annotation not yet implemented.")
+        # assignments = annotate_cytograph(adata, marker_dict, group_name)
+    # Join cluster-level results with adata
+    assignments = assignments.reset_index(names=group_name)
+    return assignments
 
 
 def annotate_snap(adata, marker_dict, group_name):
@@ -21,82 +31,67 @@ def annotate_snap(adata, marker_dict, group_name):
     group_name
         Name of the column in adata.obs that contains the cluster labels
     """
-    # Compute AUROC and fraction nonzero for marker features
-    features = list(set.union(*[set(x) for x in marker_dict.values()]))
-    metrics = auc_expr(adata, group_name, features=features)
-
     # Reformat marker_dict into binary matrix
-    df = pd.concat(
-        [pd.Series(v, name=k).astype(str) for k, v in marker_dict.items()],
-        axis=1,
+    marker_mat = dict_to_binary(marker_dict)
+    # Compute AUROC and fraction nonzero for marker features
+    features = marker_mat.columns
+    metrics = auc_expr(adata, group_name, features=features)
+    # Subset markers to actually used features
+    marker_mat = marker_mat.loc[:, metrics["features"]]
+    auc_max = masked_max(metrics["auroc"], marker_mat.values)
+    expr_max = masked_max(metrics["frac_nonzero"], marker_mat.values)
+    assignment_scores = auc_max * expr_max
+    assign_idx = jnp.argmax(assignment_scores, axis=0)
+    assign_df = pd.DataFrame(
+        {
+            "class": marker_mat.index[assign_idx],
+            "score": assignment_scores[assign_idx, jnp.arange(auc_max.shape[1])],
+            "auc": auc_max[assign_idx, jnp.arange(auc_max.shape[1])],
+            "expr": expr_max[assign_idx, jnp.arange(expr_max.shape[1])],
+        },
+        index=metrics["groups"],
     )
-    marker_mat = pd.get_dummies(df.stack()).sum(level=1).clip_upper(1)
+    return assign_df
 
 
-#
+annotate(adata, marker_dict, "res.0.6")
 
-### Old R code
-# assign_class <- function(object, marker_list, cluster_name){
+mask = marker_mat.values[0, :]
+x = metrics["auroc"]
 
-#     marker_mat <- marker_list %>%
-#         enframe('class', 'gene') %>%
-#         unnest_longer(gene) %>%
-#         mutate(value=1) %>%
-#         pivot_wider(names_from='class', values_fill=0) %>%
-#         column_to_rownames('gene') %>% as.matrix()
+x * mask
 
-#     marker_auc <- cluster_de %>%
-#         filter(feature%in%rownames(marker_mat)) %>%
-#         dplyr::select(feature, group, auc) %>%
-#         pivot_wider(names_from=group, values_from=auc) %>%
-#         column_to_rownames('feature') %>% as.matrix()
+marker_dict = dict(
+    Dorsal_Telencephalon=["EMX1", "NEUROD6", "NFIX"],
+    Ventral_Telencephalon=["DLX5", "DLX2"],
+    Diencephalon=["NHLH2", "LHX5", "RSPO3", "RSPO2"],
+    Mesencephalon=["OTX2", "LHX1", "LHX5", "ZIC1"],
+    Rhombencephalon=["HOXB2"],
+)
 
-#     marker_ex <- cluster_de %>%
-#         filter(feature%in%rownames(marker_mat)) %>%
-#         dplyr::select(feature, group, prcex_self) %>%
-#         pivot_wider(names_from=group, values_from=prcex_self) %>%
-#         column_to_rownames('feature') %>% as.matrix() %>% {./100}
+group_name = "res.0.6"
+adata = adata
 
-#     max_auc_mat <- map(names(marker_list), function(n){
-#         x <- marker_list[[n]]
-#         auc_mat <- marker_auc[intersect(x, rownames(marker_auc)), ]
-#         if (is.null(ncol(auc_mat))){
-#             return(enframe(auc_mat, 'group', n))
-#         } else {
-#             max_mat <- colMaxs(auc_mat)
-#             names(max_mat) <- colnames(marker_auc)
-#             return(enframe(max_mat, 'group', n))
-#         }
-#     }) %>% reduce(inner_join) %>% column_to_rownames('group') %>% as.matrix()
+auc_expr(adata, "res.0.6")
 
-#     max_auc_df <- max_auc_mat %>%
-#         as_tibble(rownames='group') %>%
-#         pivot_longer(!group, names_to='class', values_to='auc')
-
-#     max_ex_mat <- map(names(marker_list), function(n){
-#         x <- marker_list[[n]]
-#         ex_mat <- marker_ex[intersect(x, rownames(marker_ex)), ]
-#         if (is.null(ncol(ex_mat))){
-#             return(enframe(ex_mat, 'group', n))
-#         } else {
-#             max_mat <- colMaxs(ex_mat)
-#             names(max_mat) <- colnames(marker_ex)
-#             return(enframe(max_mat, 'group', n))
-#         }
-#     }) %>% reduce(inner_join) %>% column_to_rownames('group') %>% as.matrix()
-
-#     max_ex_df <- max_ex_mat %>%
-#         as_tibble(rownames='group') %>%
-#         pivot_longer(!group, names_to='class', values_to='expr_frac')
-
-#     score_mat <- max_auc_mat * max_ex_mat
-#     class_assign <- colnames(score_mat)[apply(score_mat, 1, which.max)]
-#     class_score <- rowMaxs(score_mat)
-#     class_assign_df <- tibble(
-#         pred_class = class_assign,
-#         pred_score = class_score,
-#         group = rownames(score_mat)
-#     )
-
-#     return(list(assignment=class_assign_df, auc=max_auc_mat, expr=max_ex_mat))
-# }
+# Jax 2d array
+# Test groups
+groups = jnp.array([0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1])
+# Expr mat with same nrows as groups
+expr_mat = jnp.array(
+    [
+        [0.1, 0.2, 0.3],
+        [0.2, 0.1, 0.3],
+        [0.3, 0.2, 0.1],
+        [0.1, 0.2, 0.3],
+        [0.2, 0.1, 0.3],
+        [0.3, 0.2, 0.1],
+        [0.1, 0.2, 0.3],
+        [0.2, 0.1, 0.3],
+        [0.3, 0.2, 0.1],
+        [0.1, 0.2, 0.3],
+        [0.2, 0.1, 0.3],
+        [0.3, 0.2, 0.1],
+        [0.1, 0.2, 0.3],
+    ]
+)
