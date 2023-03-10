@@ -7,39 +7,60 @@ import numpy as np
 
 from jax.scipy.special import gammaln, betainc, betaln
 
-from .utils import dict_to_binary
+from .utils import dict_to_binary, get_expr
 
 
 def annotate_cytograph(adata, marker_dict, group_name, layer=None, f=0.2):
     """Annotate clusters based on trinarization of marker gene expression."""
     # Reformat marker_dict into binary matrix
     marker_mat = dict_to_binary(marker_dict)
-    # Compute AUROC and fraction nonzero for marker features
+
     features = marker_mat.columns
-    expr, features = get_expr(adata, features=features, layer=layer)
     marker_mat = marker_mat.loc[:, features]
-    marker_array = marker_mat.values
-    #
-    le = preprocessing.LabelEncoder()
-    le.fit(adata.obs[group_name])
-    groups = jnp.array(le.transform(adata.obs[group_name]))
-    n_groups = int(groups.max() + 1)
-    # trinatize
-    trinaries = betabinomial_trinarize_array(expr, groups, n_groups, f)
-    annot_probs = get_annot_probs(np.array(trinaries), marker_array)
+
+    # Compute trinaries
+    metrics = trinarize(adata, group_name, features=features, layer=layer)
+
+    annot_probs = get_annot_probs(np.array(metrics["trinaries"]), marker_mat.values)
+
     annot_dict = {}
     annot_scores = np.zeros(annot_probs.shape[1])
     for i in range(annot_probs.shape[1]):
-        annot_dict[le.classes_[i]] = marker_mat.index[np.argmax(annot_probs[:, i])]
+        annot_dict[metrics["groups"][i]] = marker_mat.index[
+            np.argmax(annot_probs[:, i])
+        ]
         annot_scores[i] = np.max(annot_probs[:, i])
+
     annot_tags = [
         tag if isinstance(tag, str) else ";".join(tag) for tag in annot_dict.values()
     ]
+
     assign_df = pd.DataFrame(
         {"class": annot_tags, "score": annot_scores},
         index=annot_dict.keys(),
     )
     return assign_df
+
+
+def trinarize(adata, group_name, features=None, layer=None):
+    """Compute the trinaries for each marker gene."""
+    # Turn string groups into integers
+    le = preprocessing.LabelEncoder()
+    le.fit(adata.obs[group_name])
+
+    # Get groups and expression
+    groups = jnp.array(le.transform(adata.obs[group_name]))
+    n_groups = int(groups.max() + 1)
+    expr, features = get_expr(adata, features=features, layer=layer)
+
+    # Trinatize
+    trinaries = betabinomial_trinarize_array(expr, groups, n_groups, f)
+
+    return dict(
+        trinaries=trinaries,
+        features=features,
+        groups=le.classes_,
+    )
 
 
 @numba.jit
@@ -76,7 +97,7 @@ def betabinomial_trinarize_array(x, groups, n_groups, f):
     x = jnp.round(jnp.array(x))
     n_by_group = jnp.bincount(groups, length=n_groups)
     k_by_group = jnp.zeros(n_groups)
-    for g in jnp.arange(n_groups):
+    for g in range(n_groups):
         group_mask = jnp.array(groups == g, dtype=jnp.int32)
         k_by_group = k_by_group.at[g].set(jnp.count_nonzero(x * group_mask))
     ps = p_half(k_by_group, n_by_group, f)
@@ -114,21 +135,3 @@ def p_half(k: int, n: int, f: float) -> float:
         - gammaln(b - k + n)
     )
     return p
-
-
-expr = jnp.array(to_dense(adata[:, features].layers["counts"]))
-x = expr[:, 0]
-group_name = "res.0.6"
-k = k_by_group[0]
-n = n_by_group[0]
-
-
-marker_dict = dict(
-    Dorsal_Telencephalon=["EMX1", "NEUROD6", "NFIX"],
-    Ventral_Telencephalon=["DLX5", "DLX2"],
-    Diencephalon=["NHLH2", "LHX5", "RSPO3", "RSPO2"],
-    Mesencephalon=["OTX2", "LHX1", "LHX5", "ZIC1"],
-    Rhombencephalon=["HOXB2"],
-)
-
-annotate_cytograph(adata, marker_dict, group_name, layer="counts", f=0.2)
