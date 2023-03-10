@@ -6,10 +6,10 @@ from jax import numpy as jnp
 from .utils import auc_expr, dict_to_binary
 
 
-def annotate(adata, marker_dict, group_name, method="snap"):
+def annotate(adata, marker_dict, group_name, method="snap", layer=None):
     """Annotate clusters with marker genes."""
     if method == "snap":
-        assignments = annotate_snap(adata, marker_dict, group_name)
+        assignments = annotate_snap(adata, marker_dict, group_name, layer=layer)
     if method == "cytograph":
         raise NotImplementedError("Cytograph annotation not yet implemented.")
         # assignments = annotate_cytograph(adata, marker_dict, group_name)
@@ -18,7 +18,7 @@ def annotate(adata, marker_dict, group_name, method="snap"):
     return assignments
 
 
-def annotate_snap(adata, marker_dict, group_name):
+def annotate_snap(adata, marker_dict, group_name, layer=None):
     """
     Anntoate cell types based on AUROC and expression of predefined marker genes.
 

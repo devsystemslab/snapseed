@@ -58,20 +58,14 @@ def expr_auroc_over_groups(expr, groups):
     return auroc, frac_nz
 
 
-def auc_expr(adata, group_name, features=None):
+def auc_expr(adata, group_name, features=None, layer=None):
     """Computes AUROC and fraction nonzero for each gene in an adata object."""
     # Turn string groups into integers
     le = preprocessing.LabelEncoder()
     le.fit(adata.obs[group_name])
     # Compute AUROC and fraction nonzero
     groups = jnp.array(le.transform(adata.obs[group_name]))
-    # Select features
-    if features is not None:
-        # intersect with adata features
-        features = list(set(features) & set(adata.var_names))
-        expr = jnp.array(to_dense(adata[:, features].X))
-    else:
-        expr = jnp.array(to_dense(adata.X))
+    expr = get_expr(adata, features=features, layer=layer)
     auroc, frac_nonzero = expr_auroc_over_groups(expr, groups)
     return dict(
         frac_nonzero=frac_nonzero,
@@ -88,3 +82,15 @@ def dict_to_binary(d):
     )
     marker_mat = pd.get_dummies(df.stack()).groupby(level=1).sum().clip(upper=1)
     return marker_mat
+
+
+def get_expr(adata, features=None, layer=None):
+    if features is not None:
+        # intersect with adata features
+        features = list(set(features) & set(adata.var_names))
+    adata = adata[:, features] if features is not None else adata
+    if layer is not None:
+        expr = jnp.array(to_dense(adata[:, features].layers[layer]))
+    else:
+        expr = jnp.array(to_dense(adata[:, features].X))
+    return expr
