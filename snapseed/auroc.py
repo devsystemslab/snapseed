@@ -8,7 +8,7 @@ from .utils import dict_to_binary, get_expr
 
 def annotate_snap(adata, marker_dict, group_name, layer=None):
     """
-    Anntoate cell types based on AUROC and expression of predefined marker genes.
+    Annotate cell types based on AUROC and expression of predefined marker genes.
 
     Parameters
     ----------
@@ -18,6 +18,8 @@ def annotate_snap(adata, marker_dict, group_name, layer=None):
         Dict with marker genes for each celltype
     group_name
         Name of the column in adata.obs that contains the cluster labels
+    layer
+        Layer in adata to use for expression
     """
     # Reformat marker_dict into binary matrix
     marker_mat = dict_to_binary(marker_dict)

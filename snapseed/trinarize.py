@@ -11,7 +11,20 @@ from .utils import dict_to_binary, get_expr
 
 
 def annotate_cytograph(adata, marker_dict, group_name, layer=None, f=0.2):
-    """Annotate clusters based on trinarization of marker gene expression."""
+    """
+    Annotate clusters based on trinarization of marker gene expression.
+
+    Parameters
+    ----------
+    adata
+        AnnData object
+    marker_dict
+        Dict with marker genes for each celltype
+    group_name
+        Name of the column in adata.obs that contains the cluster labels
+    layer
+        Layer in adata to use for expression
+    """
     # Reformat marker_dict into binary matrix
     marker_mat = dict_to_binary(marker_dict)
 
