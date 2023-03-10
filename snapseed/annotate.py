@@ -7,7 +7,7 @@ def annotate(adata, marker_dict, group_name, method="snap", layer=None):
     if method == "auroc":
         assignments = annotate_snap(adata, marker_dict, group_name, layer=layer)
     if method == "trinatize":
-        assignments = annotate_cytograph(adata, marker_dict, group_name)
+        assignments = annotate_cytograph(adata, marker_dict, group_name, layer=layer)
     else:
         raise ValueError("Unknown method.")
     # Join cluster-level results with adata

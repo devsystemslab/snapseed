@@ -97,15 +97,15 @@ def betabinomial_trinarize_array(x, groups, n_groups, f):
     Trinarize a vector, grouped by groups, using a beta binomial model
     Parameters
     ----------
-            x
-                The input expression vector.
-            groups
-                Group labels.
+    x
+        The input expression vector.
+    groups
+        Group labels.
 
     Returns
     -------
-            ps
-                The posterior probability of xession in at least a fraction f
+    ps
+        The posterior probability of xession in at least a fraction f
     """
     x = jnp.round(jnp.array(x))
     n_by_group = jnp.bincount(groups, length=n_groups)
