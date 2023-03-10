@@ -66,28 +66,3 @@ def auc_expr(adata, group_name, features=None):
         expr = jnp.array(to_dense(adata.X))
     auroc, frac_nonzero = expr_auroc_over_groups(expr, groups)
     return dict(frac_nonzero=frac_nonzero, auroc=auroc)
-
-
-auc_expr(adata, "res.0.6")
-
-# Jax 2d array
-# Test groups
-groups = jnp.array([0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1])
-# Expr mat with same nrows as groups
-expr_mat = jnp.array(
-    [
-        [0.1, 0.2, 0.3],
-        [0.2, 0.1, 0.3],
-        [0.3, 0.2, 0.1],
-        [0.1, 0.2, 0.3],
-        [0.2, 0.1, 0.3],
-        [0.3, 0.2, 0.1],
-        [0.1, 0.2, 0.3],
-        [0.2, 0.1, 0.3],
-        [0.3, 0.2, 0.1],
-        [0.1, 0.2, 0.3],
-        [0.2, 0.1, 0.3],
-        [0.3, 0.2, 0.1],
-        [0.1, 0.2, 0.3],
-    ]
-)
