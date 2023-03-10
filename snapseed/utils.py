@@ -24,15 +24,15 @@ def frac_nonzero(x, axis=0):
 
 @jax.jit
 @partial(jax.vmap, in_axes=[1, None])
-def jit_auroc(expr, groups):
+def jit_auroc(x, groups):
     # sort scores and corresponding truth values
-    desc_score_indices = jnp.argsort(expr)[::-1]
-    expr = expr[desc_score_indices]
+    desc_score_indices = jnp.argsort(x)[::-1]
+    x = x[desc_score_indices]
     groups = groups[desc_score_indices]
-    # expr typically has many tied values. Here we extract
+    # x typically has many tied values. Here we extract
     # the indices associated with the distinct values. We also
     # concatenate a value for the end of the curve.
-    distinct_value_indices = jnp.array(jnp.diff(expr) != 0, dtype=jnp.int32)
+    distinct_value_indices = jnp.array(jnp.diff(x) != 0, dtype=jnp.int32)
     threshold_mask = jnp.r_[distinct_value_indices, 1]
     # accumulate the true positives with decreasing threshold
     tps_ = jnp.cumsum(groups)
