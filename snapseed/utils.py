@@ -1,12 +1,11 @@
+import pandas as pd
 import jax
 from jax import numpy as jnp
 
 from functools import partial
-
-from sklearn import preprocessing
-import scanpy as sc
-
 from sklearn.metrics import roc_auc_score
+
+import scanpy as sc
 
 to_dense = lambda x: x.toarray() if hasattr(x, "toarray") else x
 
@@ -24,7 +23,7 @@ def frac_nonzero(x, axis=0):
 
 def dict_to_binary(d):
     df = pd.concat(
-        [pd.Series(v, name=k).astype(str) for k, v in marker_dict.items()],
+        [pd.Series(v, name=k).astype(str) for k, v in d.items()],
         axis=1,
     )
     marker_mat = pd.get_dummies(df.stack()).groupby(level=1).sum().clip(upper=1)
@@ -53,5 +52,5 @@ def get_subtypes(x):
     for k, v in x.items():
         if "subtypes" in v.keys():
             subtype_dict[k] = v["subtypes"]
-            marker_dicts[k] = yaml_to_dict(v["subtypes"])
+            marker_dicts[k] = get_markers(v["subtypes"])
     return subtype_dict, marker_dicts
