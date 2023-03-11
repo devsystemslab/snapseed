@@ -41,3 +41,17 @@ def get_expr(adata, features=None, layer=None):
     else:
         expr = jnp.array(to_dense(adata[:, features].X))
     return expr, features
+
+
+def get_markers(x):
+    return {n: v["marker_genes"] for n, v in x.items()}
+
+
+def get_subtypes(x):
+    subtype_dict = {}
+    marker_dicts = {}
+    for k, v in x.items():
+        if "subtypes" in v.keys():
+            subtype_dict[k] = v["subtypes"]
+            marker_dicts[k] = yaml_to_dict(v["subtypes"])
+    return subtype_dict, marker_dicts
