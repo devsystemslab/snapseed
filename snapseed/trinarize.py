@@ -4,6 +4,7 @@ from jax import numpy as jnp
 import pandas as pd
 import numpy as np
 
+from functools import partial
 
 from jax.scipy.special import gammaln, betainc, betaln
 

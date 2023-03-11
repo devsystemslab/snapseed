@@ -3,6 +3,8 @@ import pandas as pd
 import jax
 from jax import numpy as jnp
 
+from functools import partial
+
 from .utils import dict_to_binary, get_expr
 
 

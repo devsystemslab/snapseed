@@ -1,7 +1,10 @@
+import yaml
+import pandas as pd
+
 from .trinarize import annotate_cytograph
 from .auroc import annotate_snap
 
-from .utils import yaml_to_dict
+from .utils import get_subtypes
 
 
 def annotate_hierarchy(adata, marker_yaml, group_name, method="auroc", layer=None):
@@ -9,17 +12,16 @@ def annotate_hierarchy(adata, marker_yaml, group_name, method="auroc", layer=Non
     # Load marker yaml
     with open(marker_yaml, "r") as f:
         marker_hierarchy = yaml.safe_load(f)
-
     # Annotate at each level of the hierarchy
-    assignment_hierarchy = annotate_subtypes(adata, marker_hierarchy, group_name)
+    assignment_hierarchy = annotate_subtypes(
+        adata, marker_hierarchy, group_name, method=method
+    )
 
 
-def annotate_subtypes(adata, marker_hierarchy, group_name):
+def annotate_subtypes(adata, marker_hierarchy, group_name, method="auroc", layer=None):
     """Recursively annotatates all"""
     subtype_markers, subtype_hierarchy = get_subtypes(marker_hierarchy)
     for subtype in subtype_markers.keys():
-        if max_level is not None and level > max_level:
-            break
         # Get marker genes for this level
         marker_dict = subtype_markers[subtype]
         # Annotate clusters
@@ -39,10 +41,10 @@ def annotate_subtypes(adata, marker_hierarchy, group_name):
                 subtype_adata,
                 subtype_hierarchy[subtype],
                 group_name,
-                max_level=max_level,
+                method=method,
+                layer=layer,
             )
             subtype_assignments.append(subtype_annots)
-
         # Join subtype assignments
         subtype_assignments = pd.concat(subtype_assignments, axis=0)
         return [assignments] + subtype_assignments
