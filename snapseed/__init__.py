@@ -1,1 +1,1 @@
-from .annotate import annotate
+from .annotate import annotate, annotate_hierarchy
