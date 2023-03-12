@@ -38,8 +38,9 @@ def annotate_levels(
     if assignment_levels is None:
         assignment_levels = {}
 
-    if level not in assignment_levels.keys():
+    if level_name not in assignment_levels.keys():
         assignment_levels[level_name] = pd.DataFrame()
+
     assignment_levels[level_name] = pd.concat(
         [assignment_levels[level_name], assignments], axis=0
     )
