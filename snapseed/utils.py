@@ -47,16 +47,6 @@ def get_markers(x):
     return {n: v["marker_genes"] for n, v in x.items()}
 
 
-def get_subtypes(x):
-    subtype_dict = {}
-    marker_dicts = {}
-    for k, v in x.items():
-        if "subtypes" in v.keys():
-            subtype_dict[k] = v["subtypes"]
-            marker_dicts[k] = get_markers(v["subtypes"])
-    return marker_dicts, subtype_dict
-
-
 def read_marker_yaml(file):
     with open(file, "r") as f:
         marker_dict = yaml.safe_load(f)
