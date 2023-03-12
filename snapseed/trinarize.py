@@ -34,7 +34,7 @@ def annotate_cytograph(adata, marker_dict, group_name, layer=None, f=0.2):
     marker_mat = marker_mat.loc[:, features]
 
     # Compute trinaries
-    metrics = trinarize(adata, group_name, features=features, layer=layer)
+    metrics = trinarize(adata, group_name, features=features, layer=layer, f=0.2)
 
     annot_probs = get_annot_probs(np.array(metrics["trinaries"]), marker_mat.values)
 
