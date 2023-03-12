@@ -1,4 +1,3 @@
-import yaml
 import pandas as pd
 
 from .trinarize import annotate_cytograph
@@ -21,6 +20,7 @@ def annotate_hierarchy(adata, marker_hierarchy, group_name, method="auroc", laye
 def annotate_subtypes(adata, marker_hierarchy, group_name, method="auroc", layer=None):
     """Recursively annotatates all"""
     subtype_markers, subtype_hierarchy = get_subtypes(marker_hierarchy)
+    assignment_list = []
     for subtype in subtype_markers.keys():
         # Get marker genes for this level
         marker_dict = subtype_markers[subtype]
@@ -28,14 +28,17 @@ def annotate_subtypes(adata, marker_hierarchy, group_name, method="auroc", layer
         assignments = annotate(
             adata, marker_dict, group_name, method=method, layer=layer
         )
+        assignment_list += [assignments]
         # Iterate through annotated types and subset adata
         subtype_assignments = []
         for annot_subtype in assignments["class"].unique():
-            if annot_subtype not in subtype_hierarchy.keys():
+            if "subtypes" not in subtype_hierarchy[subtype][annot_subtype].keys():
                 continue
             # Subset adata
-            subtype_groups = assignments.index[assignments["class"] == subtype]
-            subtype_adata = adata[adata.obs[group_name] == subtype_groups]
+            subtype_groups = assignments.index[
+                assignments["class"] == annot_subtype
+            ].astype(str)
+            subtype_adata = adata[adata.obs[group_name].isin(subtype_groups)]
             # Recursively annotate
             subtype_annots = annotate_subtypes(
                 subtype_adata,
@@ -44,20 +47,25 @@ def annotate_subtypes(adata, marker_hierarchy, group_name, method="auroc", layer
                 method=method,
                 layer=layer,
             )
-            subtype_assignments.append(subtype_annots)
+            subtype_assignments += subtype_annots
+
         # Join subtype assignments
-        subtype_assignments = pd.concat(subtype_assignments, axis=0)
-        return [assignments] + subtype_assignments
+        if len(subtype_assignments) > 0:
+            subtype_assignments = [pd.concat(subtype_assignments, axis=1)]
+
+        assignment_list += subtype_assignments
+
+    return assignment_list
 
 
 def annotate(adata, marker_dict, group_name, method="auroc", layer=None):
     """Annotate clusters with marker genes."""
     if method == "auroc":
         assignments = annotate_snap(adata, marker_dict, group_name, layer=layer)
-    if method == "trinatize":
+    elif method == "trinatize":
         assignments = annotate_cytograph(adata, marker_dict, group_name, layer=layer)
     else:
-        raise ValueError("Unknown method.")
+        raise ValueError("Unknown annotation method.")
     # Join cluster-level results with adata
     assignments = assignments.reset_index(names=group_name)
     return assignments

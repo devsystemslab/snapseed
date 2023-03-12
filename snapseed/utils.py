@@ -1,3 +1,4 @@
+import yaml
 import pandas as pd
 import jax
 from jax import numpy as jnp
@@ -53,10 +54,10 @@ def get_subtypes(x):
         if "subtypes" in v.keys():
             subtype_dict[k] = v["subtypes"]
             marker_dicts[k] = get_markers(v["subtypes"])
-    return subtype_dict, marker_dicts
+    return marker_dicts, subtype_dict
 
 
 def read_marker_yaml(file):
-    with open(yaml_file, "r") as f:
+    with open(file, "r") as f:
         marker_dict = yaml.safe_load(f)
     return marker_dict

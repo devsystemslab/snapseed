@@ -6,7 +6,7 @@ from jax import numpy as jnp
 from functools import partial
 from sklearn import preprocessing
 
-from .utils import dict_to_binary, get_expr
+from .utils import dict_to_binary, get_expr, frac_nonzero, masked_max
 
 
 def annotate_snap(adata, marker_dict, group_name, layer=None):
@@ -58,7 +58,7 @@ def auc_expr(adata, group_name, features=None, layer=None):
 
     # Compute AUROC and fraction nonzero
     groups = jnp.array(le.transform(adata.obs[group_name]))
-    expr = get_expr(adata, features=features, layer=layer)
+    expr, features = get_expr(adata, features=features, layer=layer)
     auroc, frac_nonzero = expr_auroc_over_groups(expr, groups)
 
     return dict(
