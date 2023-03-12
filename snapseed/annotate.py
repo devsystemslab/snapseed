@@ -20,14 +20,11 @@ def annotate_hierarchy(adata, marker_hierarchy, group_name, method="auroc", laye
 def annotate_subtypes(adata, marker_hierarchy, group_name, method="auroc", layer=None):
     """Recursively annotatates all"""
     marker_dict = get_markers(marker_hierarchy)
-    assignments = annotate(
-        adata, marker_dict, group_name, method=method, layer=layer
-    )
+    assignments = annotate(adata, marker_dict, group_name, method=method, layer=layer)
     assignment_list = [assignments]
-    subtype_assignment_list = []
     for subtype in assignments["class"].unique():
 
-        if "subtypes" not in subtype_hierarchy[subtype].keys():
+        if "subtypes" not in marker_hierarchy[subtype].keys():
             continue
 
         # Subset adata
@@ -39,55 +36,12 @@ def annotate_subtypes(adata, marker_hierarchy, group_name, method="auroc", layer
         # Recursively annotate
         subtype_assignments = annotate_subtypes(
             subtype_adata,
-            subtype_hierarchy[subtype]["subtypes"],
+            marker_hierarchy[subtype]["subtypes"],
             group_name,
             method=method,
             layer=layer,
         )
-        subtype_assignment_list += subtype_annots
-        
-    # Join subtype assignments
-    if len(subtype_assignment_list) > 0:
-        subtype_assignment_list = [pd.concat(subtype_assignment_list, axis=0)]
-        
-    assignment_list += subtype_assignments
-    
-    subtype_markers, subtype_hierarchy = get_subtypes(marker_hierarchy)
-    assignment_list = []
-    for subtype in subtype_markers.keys():
-        # Get marker genes for this level
-        marker_dict = subtype_markers[subtype]
-        # Annotate clusters
-        assignments = annotate(
-            adata, marker_dict, group_name, method=method, layer=layer
-        )
-        assignment_list += [assignments]
-        # Iterate through annotated types and subset adata
-        subtype_assignments = []
-        for annot_subtype in assignments["class"].unique():
-            if "subtypes" not in subtype_hierarchy[].keys():
-                continue
-
-            # Subset adata
-            subtype_groups = assignments[group_name][
-                assignments["class"] == annot_subtype
-            ].astype(str)
-            subtype_adata = adata[adata.obs[group_name].isin(subtype_groups)]
-            # Recursively annotate
-            subtype_annots = annotate_subtypes(
-                subtype_adata,
-                subtype_hierarchy[subtype][annot_subtype]["subtypes"],
-                group_name,
-                method=method,
-                layer=layer,
-            )
-            subtype_assignments += subtype_annots
-
-        # Join subtype assignments
-        if len(subtype_assignments) > 0:
-            subtype_assignments = [pd.concat(subtype_assignments, axis=0)]
-
-        assignment_list += subtype_assignments
+        assignment_list += subtype_annots
 
     return assignment_list
 
