@@ -57,7 +57,7 @@ def annotate_cytograph(adata, marker_dict, group_name, layer=None, f=0.2):
     return assign_df
 
 
-def trinarize(adata, group_name, features=None, layer=None):
+def trinarize(adata, group_name, features=None, layer=None, f=0.2):
     """Compute the trinaries for each marker gene."""
     # Turn string groups into integers
     le = preprocessing.LabelEncoder()
