@@ -3,7 +3,7 @@ import pandas as pd
 from .trinarize import annotate_cytograph
 from .auroc import annotate_snap
 
-from .utils import get_markers
+from .utils import get_markers, get_annot_df
 
 
 def annotate_hierarchy(adata, marker_hierarchy, group_name, method="auroc", layer=None):
@@ -14,7 +14,10 @@ def annotate_hierarchy(adata, marker_hierarchy, group_name, method="auroc", laye
         adata, marker_hierarchy, group_name, method=method
     )
 
-    return assignment_hierarchy
+    return dict(
+        assignments=get_annot_df(assignment_hierarchy, group_name),
+        metrics=assignment_hierarchy,
+    )
 
 
 def annotate_levels(
@@ -28,6 +31,7 @@ def annotate_levels(
 ):
     """Recursively annotatates all"""
     level += 1
+    level_name = "level_" + str(level)
     marker_dict = get_markers(marker_hierarchy)
     assignments = annotate(adata, marker_dict, group_name, method=method, layer=layer)
 
@@ -35,8 +39,10 @@ def annotate_levels(
         assignment_levels = {}
 
     if level not in assignment_levels.keys():
-        assignment_levels[level] = []
-    assignment_levels[level].append(assignments)
+        assignment_levels[level_name] = pd.DataFrame()
+    assignment_levels[level_name] = pd.concat(
+        [assignment_levels[level_name], assignments], axis=0
+    )
 
     for subtype in assignments["class"].unique():
 

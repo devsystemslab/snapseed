@@ -51,3 +51,11 @@ def read_marker_yaml(file):
     with open(file, "r") as f:
         marker_dict = yaml.safe_load(f)
     return marker_dict
+
+
+def get_annot_df(x, group_name):
+    annot_list = [v.set_index(group_name)["class"] for k, v in x.items()]
+    annot_df = pd.concat(annot_list, axis=1)
+    # Rename cols to levels
+    annot_df.columns = [str(i) for i in x.keys()]
+    return annot_df
