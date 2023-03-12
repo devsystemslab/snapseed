@@ -54,3 +54,9 @@ def get_subtypes(x):
             subtype_dict[k] = v["subtypes"]
             marker_dicts[k] = get_markers(v["subtypes"])
     return subtype_dict, marker_dicts
+
+
+def read_marker_yaml(file):
+    with open(yaml_file, "r") as f:
+        marker_dict = yaml.safe_load(f)
+    return marker_dict

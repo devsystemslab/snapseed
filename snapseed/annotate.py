@@ -7,15 +7,15 @@ from .auroc import annotate_snap
 from .utils import get_subtypes
 
 
-def annotate_hierarchy(adata, marker_yaml, group_name, method="auroc", layer=None):
+def annotate_hierarchy(adata, marker_hierarchy, group_name, method="auroc", layer=None):
     """Annotate clusters hierarchically with marker genes."""
-    # Load marker yaml
-    with open(marker_yaml, "r") as f:
-        marker_hierarchy = yaml.safe_load(f)
+
     # Annotate at each level of the hierarchy
     assignment_hierarchy = annotate_subtypes(
         adata, marker_hierarchy, group_name, method=method
     )
+
+    return assignment_hierarchy
 
 
 def annotate_subtypes(adata, marker_hierarchy, group_name, method="auroc", layer=None):
