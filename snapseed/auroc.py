@@ -42,13 +42,13 @@ def annotate_snap(
     marker_mat = marker_mat.loc[:, metrics["features"]]
     auc_max = masked_max(metrics["auroc"], marker_mat.values)
     expr_max = masked_max(metrics["frac_nonzero"], marker_mat.values)
-    # Mask out genes that are not expressed in any cell
-    expr_max = jnp.where(expr_max > min_expr, expr_max, 0)
     # Combine metrics
     assignment_scores = (auc_weight * auc_max + expr_weight * expr_max) / (
         auc_weight + expr_weight
     )
     assign_idx = jnp.argmax(assignment_scores, axis=0)
+    # Mask out genes that are not expressed in any cell
+    assign_idx = jnp.where(expr_max > min_expr, assign_idx, jnp.nan)
 
     assign_df = pd.DataFrame(
         {
