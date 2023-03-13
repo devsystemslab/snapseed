@@ -47,7 +47,7 @@ def get_markers(x):
     return {n: v["marker_genes"] for n, v in x.items()}
 
 
-def read_marker_yaml(file):
+def read_yaml(file):
     with open(file, "r") as f:
         marker_dict = yaml.safe_load(f)
     return marker_dict
