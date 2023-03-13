@@ -7,7 +7,22 @@ from .utils import get_markers, get_annot_df
 
 
 def annotate_hierarchy(adata, marker_hierarchy, group_name, method="auroc", layer=None):
-    """Annotate clusters hierarchically with marker genes."""
+    """
+    Annotate clusters based on a manually defined cell type and marker hierarchy.
+
+    Parameters
+    ----------
+    adata
+        AnnData object
+    marker_hierarchy
+        Dict with marker genes for each celltype arranged hierarchically.
+    group_name
+        Name of the column in adata.obs that contains the cluster labels
+    method
+        Method to use for annotation. Options are "auroc" and "trinatize".
+    layer
+        Layer in adata to use for expression
+    """
 
     # Annotate at each level of the hierarchy
     assignment_hierarchy = annotate_levels(
@@ -29,7 +44,7 @@ def annotate_levels(
     method="auroc",
     layer=None,
 ):
-    """Recursively annotatates all"""
+    """Recursively annotatates all levels of a marker hierarchy."""
     level += 1
     level_name = "level_" + str(level)
     marker_dict = get_markers(marker_hierarchy)
@@ -71,7 +86,23 @@ def annotate_levels(
 
 
 def annotate(adata, marker_dict, group_name, method="auroc", layer=None):
-    """Annotate clusters with marker genes."""
+    """
+    Annotate clusters based on a manually defined cell type markers.
+
+    Parameters
+    ----------
+    adata
+        AnnData object
+    marker_dict
+        Dict with marker genes for each celltype
+    group_name
+        Name of the column in adata.obs that contains the cluster labels
+    method
+        Method to use for annotation. Options are "auroc" and "trinatize".
+    layer
+        Layer in adata to use for expression
+    """
+
     if method == "auroc":
         assignments = annotate_snap(adata, marker_dict, group_name, layer=layer)
     elif method == "trinatize":
