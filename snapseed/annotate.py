@@ -6,7 +6,9 @@ from .auroc import annotate_snap
 from .utils import get_markers, get_annot_df
 
 
-def annotate_hierarchy(adata, marker_hierarchy, group_name, method="auroc", layer=None):
+def annotate_hierarchy(
+    adata, marker_hierarchy, group_name, method="auroc", layer=None, **kwargs
+):
     """
     Annotate clusters based on a manually defined cell type and marker hierarchy.
 
@@ -22,6 +24,8 @@ def annotate_hierarchy(adata, marker_hierarchy, group_name, method="auroc", laye
         Method to use for annotation. Options are "auroc" and "trinatize".
     layer
         Layer in adata to use for expression
+    **kwargs
+        Additional arguments to pass to the annotation function.
     """
 
     # Annotate at each level of the hierarchy
@@ -85,7 +89,7 @@ def annotate_levels(
     return assignment_levels
 
 
-def annotate(adata, marker_dict, group_name, method="auroc", layer=None):
+def annotate(adata, marker_dict, group_name, method="auroc", layer=None, **kwargs):
     """
     Annotate clusters based on a manually defined cell type markers.
 
@@ -101,12 +105,18 @@ def annotate(adata, marker_dict, group_name, method="auroc", layer=None):
         Method to use for annotation. Options are "auroc" and "trinatize".
     layer
         Layer in adata to use for expression
+    **kwargs
+        Additional arguments to pass to the annotation function.
     """
 
     if method == "auroc":
-        assignments = annotate_snap(adata, marker_dict, group_name, layer=layer)
+        assignments = annotate_snap(
+            adata, marker_dict, group_name, layer=layer, **kwargs
+        )
     elif method == "trinatize":
-        assignments = annotate_cytograph(adata, marker_dict, group_name, layer=layer)
+        assignments = annotate_cytograph(
+            adata, marker_dict, group_name, layer=layer, **kwargs
+        )
     else:
         raise ValueError("Unknown annotation method.")
     # Join cluster-level results with adata

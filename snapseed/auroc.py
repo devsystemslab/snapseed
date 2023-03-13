@@ -9,7 +9,7 @@ from sklearn import preprocessing
 from .utils import dict_to_binary, get_expr, frac_nonzero, masked_max
 
 
-def annotate_snap(adata, marker_dict, group_name, layer=None):
+def annotate_snap(adata, marker_dict, group_name, layer=None, min_expr=0.1):
     """
     Annotate cell types based on AUROC and expression of predefined marker genes.
 
@@ -34,6 +34,8 @@ def annotate_snap(adata, marker_dict, group_name, layer=None):
     marker_mat = marker_mat.loc[:, metrics["features"]]
     auc_max = masked_max(metrics["auroc"], marker_mat.values)
     expr_max = masked_max(metrics["frac_nonzero"], marker_mat.values)
+    # Mask out genes that are not expressed in any cell
+    expr_max = jnp.where(expr_max > min_expr, expr_max, 0)
     assignment_scores = auc_max * expr_max
     assign_idx = jnp.argmax(assignment_scores, axis=0)
 
