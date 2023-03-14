@@ -14,7 +14,6 @@ def annotate_snap(
     marker_dict,
     group_name,
     layer=None,
-    min_expr=0.1,
     auc_weight=0.5,
     expr_weight=0.5,
 ):
@@ -48,11 +47,11 @@ def annotate_snap(
     )
     assign_idx = jnp.argmax(assignment_scores, axis=0)
     # Mask out genes that are not expressed in any cell
-    assign_idx = jnp.where(expr_max > min_expr, assign_idx, jnp.nan)
+    assign_class = marker_mat.index[assign_idx]
 
     assign_df = pd.DataFrame(
         {
-            "class": marker_mat.index[assign_idx],
+            "class": assign_class,
             "score": assignment_scores[assign_idx, jnp.arange(auc_max.shape[1])],
             "auc": auc_max[assign_idx, jnp.arange(auc_max.shape[1])],
             "expr": expr_max[assign_idx, jnp.arange(expr_max.shape[1])],
