@@ -12,7 +12,7 @@ def annotate_hierarchy(
     group_name,
     method="auroc",
     layer=None,
-    min_expr=0.2,
+    min_expr=0.1,
     **kwargs
 ):
     """
