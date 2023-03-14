@@ -1,5 +1,7 @@
 import yaml
 import pandas as pd
+import numba
+
 import jax
 from jax import numpy as jnp
 
@@ -31,15 +33,23 @@ def dict_to_binary(d):
     return marker_mat
 
 
+@numba.jit
+def match(a, b):
+    return [b.index(x) if x in b else None for x in a]
+
+
 def get_expr(adata, features=None, layer=None):
+    """Get expression matrix from adata object"""
     if features is not None:
         # intersect with adata features
         features = list(set(features) & set(adata.var_names))
-    adata = adata[:, features] if features is not None else adata
+        adata = adata[:, match(features, adata.var_names.tolist())]
+
     if layer is not None:
-        expr = jnp.array(to_dense(adata[:, features].layers[layer]))
+        expr = jnp.array(to_dense(adata.layers[layer]))
     else:
-        expr = jnp.array(to_dense(adata[:, features].X))
+        expr = jnp.array(to_dense(adata.X))
+
     return expr, features
 
 
