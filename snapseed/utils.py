@@ -53,8 +53,16 @@ def read_yaml(file):
     return marker_dict
 
 
-def get_annot_df(x, group_name):
-    annot_list = [v.set_index(group_name)["class"] for k, v in x.items()]
+def get_annot_df(x, group_name, min_expr=0.2):
+    # Get valid annots from each level
+    annot_list = []
+    for k, v in x.items():
+        annot = v.set_index(group_name)["class"]
+        if min_expr > 0:
+            expr = v.set_index(group_name)["expr"]
+            annot = annot[expr > min_expr]
+        annot_list.append(annot)
+    # Concat annots
     annot_df = pd.concat(annot_list, axis=1)
     # Rename cols to levels
     annot_df.columns = [str(i) for i in x.keys()]

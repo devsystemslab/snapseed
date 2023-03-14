@@ -7,7 +7,13 @@ from .utils import get_markers, get_annot_df
 
 
 def annotate_hierarchy(
-    adata, marker_hierarchy, group_name, method="auroc", layer=None, **kwargs
+    adata,
+    marker_hierarchy,
+    group_name,
+    method="auroc",
+    layer=None,
+    min_expr=0.2,
+    **kwargs
 ):
     """
     Annotate clusters based on a manually defined cell type and marker hierarchy.
@@ -34,7 +40,7 @@ def annotate_hierarchy(
     )
 
     return dict(
-        assignments=get_annot_df(assignment_hierarchy, group_name),
+        assignments=get_annot_df(assignment_hierarchy, group_name, min_expr=min_expr),
         metrics=assignment_hierarchy,
     )
 
