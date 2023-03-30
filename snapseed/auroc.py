@@ -84,6 +84,8 @@ def auc_expr(adata, group_name, features=None, layer=None):
 @jax.jit
 @partial(jax.vmap, in_axes=[1, None])
 def jit_auroc(x, groups):
+    # TODO: compute frac nonzero here to avoid iterating twice
+
     # sort scores and corresponding truth values
     desc_score_indices = jnp.argsort(x)[::-1]
     x = x[desc_score_indices]
