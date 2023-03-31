@@ -8,6 +8,27 @@ import scanpy as sc
 from snapseed.utils import read_yaml
 
 
+def wrangle_ranks_from_anndata(anndata):
+    """
+    Wrangle results from the ranked_genes_groups function of Scanpy (Wolf et al., 2018) on louvain clusters.
+    """
+    # Get number of top ranked genes per groups
+    nb_marker = len(anndata.uns['rank_genes_groups']['names'])
+    # Wrangle results into a table (pandas dataframe)
+    top_score = pd.DataFrame(anndata.uns['rank_genes_groups']['scores']).loc[:nb_marker]
+    top_adjpval = pd.DataFrame(anndata.uns['rank_genes_groups']['pvals_adj']).loc[:nb_marker]
+    top_gene = pd.DataFrame(anndata.uns['rank_genes_groups']['names']).loc[:nb_marker]
+    marker_df = pd.DataFrame()
+    # Order values
+    for i in top_score.columns:
+        concat = pd.concat([top_score[[str(i)]], top_adjpval[str(i)], top_gene[[str(i)]]], axis=1, ignore_index=True)
+        concat['cluster_number'] = i
+        col = list(concat.columns)
+        col[0], col[1], col[-2] = 'z_score', 'adj_pvals', 'gene'
+        concat.columns = col
+        marker_df = marker_df.append(concat)
+    return marker_df
+
 
 def annot_adata(adata, marker_genes, level_name='level_1', 
                 has_na=False, res=1.0):
