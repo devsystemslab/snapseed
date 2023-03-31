@@ -2,6 +2,7 @@ import pandas as pd
 
 from .trinarize import annotate_cytograph
 from .auroc import annotate_snap
+from .cluster import annotate_cluster
 
 from .utils import get_markers, get_annot_df
 
@@ -58,7 +59,8 @@ def annotate_levels(
     level += 1
     level_name = "level_" + str(level)
     marker_dict = get_markers(marker_hierarchy)
-    assignments = annotate(adata, marker_dict, group_name, method=method, layer=layer)
+    assignments = annotate(adata, marker_dict, group_name, method=method, 
+                            layer=layer, level_name=level_name)
 
     if assignment_levels is None:
         assignment_levels = {}
@@ -122,6 +124,10 @@ def annotate(adata, marker_dict, group_name, method="auroc", layer=None, **kwarg
     elif method == "trinatize":
         assignments = annotate_cytograph(
             adata, marker_dict, group_name, layer=layer, **kwargs
+        )
+    elif method == "cluster":
+        assignments = annotate_cluster(
+            adata, marker_dict, group_name, layer=layer, level_name=level_name, **kwargs
         )
     else:
         raise ValueError("Unknown annotation method.")
