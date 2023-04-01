@@ -2,7 +2,7 @@ import pandas as pd
 
 from .trinarize import annotate_cytograph
 from .auroc import annotate_snap
-from .cluster import annotate_cluster
+from .cluster import annotate_degenes
 
 from .utils import get_markers, get_annot_df
 
@@ -126,7 +126,7 @@ def annotate(adata, marker_dict, group_name, method="auroc", layer=None, **kwarg
             adata, marker_dict, group_name, layer=layer, **kwargs
         )
     elif method == "cluster":
-        assignments = annotate_cluster(
+        assignments = annotate_degenes(
             adata, marker_dict, group_name, layer=layer, level_name=level_name, **kwargs
         )
     else:
