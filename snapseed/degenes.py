@@ -32,12 +32,17 @@ def annotate_degenes(
     # level_name = "level_" + str(level)
 
     # TODO magic way for adata only has one cluster
-    if len(adata.obs[group_name].unique()) == 1:
-        assign_df = annotate_snap(
-            adata, marker_dict, group_name, layer=layer
-        )
-        # assign_df = pd.DataFrame({'class':['na'], 'score':[np.nan], 'expr':[1]})
-        # assign_df.index=adata.obs[group_name].unique()
+    print(adata.obs[group_name].unique())
+    if len(adata.obs[group_name].unique()) <= 1:
+        # 1st way
+        # assign_df = annotate_snap(
+        #     adata, marker_dict, group_name, layer=layer
+        # )
+        # 2nd way
+        assign_df = pd.DataFrame({'class':['na'], 'score':[np.nan], 'expr':[1]})
+        assign_df.index=adata.obs[group_name].unique()
+        # 3rd way
+        # assign_df=pd.DataFrame()
         return assign_df
     
     corr_df = get_bulk_exp(adata, group_name).astype(float).corr()

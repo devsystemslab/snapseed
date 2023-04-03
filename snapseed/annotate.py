@@ -72,7 +72,9 @@ def annotate_levels(
     )
 
     for subtype in assignments["class"].unique():
-
+        if subtype == 'na':
+            continue
+            
         if "subtypes" not in marker_hierarchy[subtype].keys():
             continue
 
