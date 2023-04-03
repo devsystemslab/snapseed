@@ -8,12 +8,11 @@ import scanpy as sc
 from snapseed.utils import read_yaml
 
 
-def annotate_cluster(
+def annotate_degenes(
     adata,
     marker_dict,
     group_name,
     layer=None,
-    level_name=None
     ):
     """
     Annotate cell types based on differentially expressed (DE) marker genes.
@@ -29,19 +28,7 @@ def annotate_cluster(
     layer
         Layer in adata to use for expression
     """
-    if level_name=='level_1':
-        adata=annot_adata(adata, marker_genes, level_name='level_1', has_na=False)
-    else:
-        adata=annot_adata_lowlevel(adata, marker_genes, level_name=level_name, has_na=True)
-
-
-def annot_adata(
-    adata, 
-    marker_genes, 
-    level_name='level_1', 
-    has_na=False, 
-    group_name=group_name
-    ):
+    # level_name = "level_" + str(level)
 
     corr_df = get_bulk_exp(adata, group_name).astype(float).corr()
     corr_df = 1 - corr_df
@@ -49,11 +36,11 @@ def annot_adata(
     ntop = math.ceil(len(adata.obs[group_name].unique())/10)
     cluster_to_compair = corr_df.apply(lambda s: s.abs().nlargest(ntop).index.tolist(), axis=1).to_dict()
 
-    result_df_zscore = pd.DataFrame(marker_genes.keys())
-    result_df_zscore = result_df_zscore.rename(columns={0:level_name})
+    result_df_zscore = pd.DataFrame(marker_dict.keys())
+    result_df_zscore = result_df_zscore.rename(columns={0:'level_name'})
 
-    result_df_apvalue = pd.DataFrame(marker_genes.keys())
-    result_df_apvalue = result_df_apvalue.rename(columns={0:level_name})
+    result_df_apvalue = pd.DataFrame(marker_dict.keys())
+    result_df_apvalue = result_df_apvalue.rename(columns={0:'level_name'})
 
     for cluster in adata.obs[group_name].unique():
         adata0 = adata.copy()
@@ -65,83 +52,44 @@ def annot_adata(
         adata0.obs.loc[adata0.obs[group_name].isin(cluster_to_compair[cluster]), 
                        group_name] = 'ref'
 
-        sc.tl.rank_genes_groups(adata0, f"leiden_{high_res}", groups=[cluster], 
+        sc.tl.rank_genes_groups(adata0, group_name, groups=[cluster], 
                                 reference='ref', method='wilcoxon')
 
         wranks = wrangle_ranks_from_adata(adata0)
 
         z_scores=[]
         adj_pvalss=[]
-        for i in marker_genes:
-            z_scores.append(wranks.loc[wranks.gene.isin(marker_genes[i]['marker_genes']), 'z_score'].max())
-            adj_pvalss.append(-np.log10(wranks.loc[wranks.gene.isin(marker_genes[i]['marker_genes']), 'adj_pvals']).max())
+        for i in marker_dict:
+            z_scores.append(wranks.loc[wranks.gene.isin(marker_dict[i]), 'z_score'].max())
+            adj_pvalss.append(-np.log10(wranks.loc[wranks.gene.isin(marker_dict[i]), 'adj_pvals']).max())
+            # z_scores.append(wranks.loc[wranks.gene.isin(marker_dict[i]['marker_genes']), 'z_score'].max())
+            # adj_pvalss.append(-np.log10(wranks.loc[wranks.gene.isin(marker_dict[i]['marker_genes']), 'adj_pvals']).max())
 
         # result_df_zscore[cluster]=[i*j for i,j in zip(z_scores,adj_pvalss)]
         result_df_zscore[cluster]=z_scores
         result_df_apvalue[cluster]=adj_pvalss
 
-    z_df = result_df_zscore.set_index(level_name)
+    z_df = result_df_zscore.set_index('level_name')
     cluster2ct = z_df.idxmax().to_dict()
 
+    has_na = False
+    # TODO add has_na
     if has_na:    
         for i in cluster2ct:
             if i in z_df[z_df.max(axis=1)<1].index:
                 cluster2ct[i] = 'na'
+                
+    assign_df = pd.DataFrame(pd.Series(cluster2ct))
+    assign_df = assign_df.rename(columns={0:'class'})
+    assign_df['score'] = z_df.max()
 
-    adata.obs[level_name] = adata.obs[group_name].map(cluster2ct)
+    # TODO magic way to avoid get_annot_df error
+    assign_df['expr'] = 1
 
-    return adata
+    return assign_df
 
-def annot_adata_level2(
-    adata, 
-    marker_genes, 
-    level_name='level_2', 
-    has_na=True
-    ):
-
-    level2={}
-    for i in adata.obs.level_1.unique():
-        sub_adata = adata[adata.obs.level_1==i]
-        
-        if 'subtypes' not in marker_genes[i]:
-            level2.update(sub_adata.obs.level_1.to_dict())
-        else:
-            sub_adata = sub_adata.copy()
-            sub_adata = annot_adata(sub_adata, marker_genes[i]['subtypes'],
-                                  level_name='level_2', has_na=True)
-            sub_adata = sub_adata[sub_adata.obs.level_1==i]
-
-            level2.update(sub_adata.obs.level_2.to_dict())
-            
-    adata.obs['level_2'] = adata.obs.index.map(level2)
-    
-    return adata
-
-def annot_adata_lowlevel(
-    adata, 
-    marker_genes, 
-    level_name='level_2', 
-    has_na=True
-    ):
-
-    llevel = {}
-    up_level_name = f"level_{int(level_name.split('_')[-1])-1}"
-
-    for i in adata.obs[up_level_name].unique():
-        sub_adata = adata[adata.obs[up_level_name] == i].copy()
-        
-        if 'subtypes' not in marker_genes[i]:
-            llevel.update(sub_adata.obs[up_level_name].to_dict())
-        else:
-            sub_adata = annot_adata(sub_adata, marker_genes[i]['subtypes'],
-                                  level_name=level_name, has_na=True)
-            sub_adata = sub_adata[sub_adata.obs[up_level_name] == i]
-
-            llevel.update(sub_adata.obs[level_name].to_dict())
-            
-    adata.obs[level_name] = adata.obs.index.map(llevel)
-    
-    return adata
+    # adata.obs[level_name] = adata.obs[group_name].map(cluster2ct)
+    # return adata
 
 def wrangle_ranks_from_adata(adata):
     """
