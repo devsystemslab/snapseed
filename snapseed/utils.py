@@ -15,7 +15,9 @@ import scanpy as sc
 def to_jax_array(x):
     """Turn matrix to jax array."""
     if hasattr(x, "todense"):
-        return BCOO.from_scipy_sparse(x)
+        # Currently this is not supported for really large matrices
+        # return BCOO.from_scipy_sparse(x).update_layout(n_batch=1, on_inefficient=None)
+        return jnp.array(x.todense())
     else:
         return jnp.array(x)
 
