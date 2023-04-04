@@ -49,16 +49,21 @@ def get_expr(adata, features=None, layer=None):
     if features is not None:
         # intersect with adata features
         features = list(set(features) & set(adata.var_names))
-        adata = adata[:, match(features, adata.var_names.tolist())]
+        adata = adata[
+            :,
+            match(
+                numba.typed.List(features), numba.typed.List(adata.var_names.tolist())
+            ),
+        ]
     else:
-        features = adata.var_names.tolist()
+        features = adata.var_names.copy().tolist()
 
     if layer is not None:
         expr = jnp.array(to_dense(adata.layers[layer]))
     else:
         expr = jnp.array(to_dense(adata.X))
 
-    return expr, jnp.array(features)
+    return expr, features
 
 
 def get_markers(x):
@@ -85,3 +90,11 @@ def get_annot_df(x, group_name, min_expr=0.2):
     # Rename cols to levels
     annot_df.columns = [str(i) for i in x.keys()]
     return annot_df
+
+
+def matrix_to_long_df(x, features, groups):
+    """Converts a matrix to a long dataframe"""
+    df = pd.DataFrame(x, index=groups, columns=features)
+    df = df.stack().reset_index()
+    df.columns = ["group", "feature", "value"]
+    return df
