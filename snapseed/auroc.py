@@ -16,6 +16,7 @@ def annotate_snap(
     layer=None,
     auc_weight=0.5,
     expr_weight=0.5,
+    marker_summary_fun="max",
 ):
     """
     Annotate cell types based on AUROC and expression of predefined marker genes.
@@ -39,8 +40,17 @@ def annotate_snap(
     metrics = auc_expr(adata, group_name, features=features)
 
     marker_mat = marker_mat.loc[:, metrics["features"]]
-    auc_max = masked_max(metrics["auroc"], marker_mat.values)
-    expr_max = masked_max(metrics["frac_nonzero"], marker_mat.values)
+    if marker_summary_fun == "max":
+        auc_max = masked_max(metrics["auroc"], marker_mat.values)
+        expr_max = masked_max(metrics["frac_nonzero"], marker_mat.values)
+    elif marker_summary_fun == "mean":
+        auc_max = masked_mean(metrics["auroc"], marker_mat.values)
+        expr_max = masked_mean(metrics["frac_nonzero"], marker_mat.values)
+    else:
+        raise ValueError(
+            f"Invalid marker_summary_fun: {marker_summary_fun}. "
+            "Current options are 'max' and 'mean'."
+        )
     # Combine metrics
     assignment_scores = (auc_weight * auc_max + expr_weight * expr_max) / (
         auc_weight + expr_weight
