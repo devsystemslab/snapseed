@@ -108,7 +108,7 @@ def auc_expr(
         frac_nonzero_out=frac_nonzero_out,
         auroc=auroc,
         features=features,
-        groups=jnp.array(le.classes_),
+        groups=le.classes_,
     )
 
 
