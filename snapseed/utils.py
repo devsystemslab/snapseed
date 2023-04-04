@@ -20,6 +20,12 @@ def masked_max(x, mask):
 
 
 @jax.jit
+@partial(jax.vmap, in_axes=[None, 0])
+def masked_mean(x, mask):
+    return jnp.sum(x * mask, axis=1) / jnp.sum(mask, axis=1)
+
+
+@jax.jit
 def frac_nonzero(x, axis=0):
     return jnp.mean(x > 0, axis=axis)
 
