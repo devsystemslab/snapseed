@@ -22,7 +22,7 @@ def masked_max(x, mask):
 @jax.jit
 @partial(jax.vmap, in_axes=[None, 0])
 def masked_mean(x, mask):
-    return jnp.sum(x * mask, axis=1) / jnp.sum(mask, axis=1)
+    return jnp.sum(x * mask, axis=1) / jnp.sum(mask)
 
 
 @jax.jit
