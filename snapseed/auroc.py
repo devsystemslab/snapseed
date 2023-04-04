@@ -6,7 +6,7 @@ from jax import numpy as jnp
 from functools import partial
 from sklearn import preprocessing
 
-from .utils import dict_to_binary, get_expr, frac_nonzero, masked_max
+from .utils import dict_to_binary, get_expr, frac_nonzero, masked_max, masked_mean
 
 
 def annotate_snap(
