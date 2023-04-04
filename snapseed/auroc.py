@@ -128,13 +128,22 @@ def jit_auroc(x, groups):
     return area
 
 
-def expr_auroc_over_groups(expr, groups):
+def expr_auroc_over_groups(
+    expr, groups, compute_auroc=True, compute_frac_nz=True, compute_frac_nz_out=False
+):
     """Computes AUROC for each group separately."""
     auroc = jnp.zeros((groups.max() + 1, expr.shape[1]))
     frac_nz = jnp.zeros((groups.max() + 1, expr.shape[1]))
+    frac_nz_out = jnp.zeros((groups.max() + 1, expr.shape[1]))
 
     for group in range(groups.max() + 1):
-        auroc = auroc.at[group, :].set(jit_auroc(expr, groups == group))
-        frac_nz = frac_nz.at[group, :].set(frac_nonzero(expr[groups == group, :]))
+        if compute_auroc:
+            auroc = auroc.at[group, :].set(jit_auroc(expr, groups == group))
+        if compute_frac_nz:
+            frac_nz = frac_nz.at[group, :].set(frac_nonzero(expr[groups == group, :]))
+        if compute_frac_nz_out:
+            frac_nz_out = frac_nz.at[group, :].set(
+                frac_nonzero(expr[groups != group, :])
+            )
 
-    return auroc, frac_nz
+    return auroc, frac_nz, frac_nz_out
