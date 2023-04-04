@@ -58,7 +58,7 @@ def get_expr(adata, features=None, layer=None):
     else:
         expr = jnp.array(to_dense(adata.X))
 
-    return expr, features
+    return expr, jnp.array(features)
 
 
 def get_markers(x):
