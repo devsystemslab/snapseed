@@ -4,13 +4,20 @@ import numba
 
 import jax
 from jax import numpy as jnp
+from jax.experimental.sparse import BCOO
 
 from functools import partial
 from sklearn.metrics import roc_auc_score
 
 import scanpy as sc
 
-to_dense = lambda x: x.toarray() if hasattr(x, "toarray") else x
+
+def to_jax_array(x):
+    """Turn matrix to jax array."""
+    if hasattr(x, "todense"):
+        return BCOO.from_scipy_sparse(matrix=x)
+    else:
+        return jnp.array(x)
 
 
 @jax.jit
@@ -59,9 +66,9 @@ def get_expr(adata, features=None, layer=None):
         features = adata.var_names.copy().tolist()
 
     if layer is not None:
-        expr = jnp.array(to_dense(adata.layers[layer]))
+        expr = to_jax_array(adata.layers[layer])
     else:
-        expr = jnp.array(to_dense(adata.X))
+        expr = to_jax_array(adata.X)
 
     return expr, features
 
