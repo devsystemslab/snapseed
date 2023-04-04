@@ -15,7 +15,7 @@ import scanpy as sc
 def to_jax_array(x):
     """Turn matrix to jax array."""
     if hasattr(x, "todense"):
-        return BCOO.from_scipy_sparse(matrix=x)
+        return BCOO.from_scipy_sparse(x)
     else:
         return jnp.array(x)
 
