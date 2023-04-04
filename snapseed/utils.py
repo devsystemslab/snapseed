@@ -50,6 +50,8 @@ def get_expr(adata, features=None, layer=None):
         # intersect with adata features
         features = list(set(features) & set(adata.var_names))
         adata = adata[:, match(features, adata.var_names.tolist())]
+    else:
+        features = adata.var_names.tolist()
 
     if layer is not None:
         expr = jnp.array(to_dense(adata.layers[layer]))
