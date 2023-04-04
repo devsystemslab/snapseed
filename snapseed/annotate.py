@@ -36,7 +36,7 @@ def annotate_hierarchy(
 
     # Annotate at each level of the hierarchy
     assignment_hierarchy = annotate_levels(
-        adata, marker_hierarchy, group_name, method=method
+        adata, marker_hierarchy, group_name, method=method, **kwargs
     )
 
     return dict(
@@ -53,12 +53,15 @@ def annotate_levels(
     assignment_levels=None,
     method="auroc",
     layer=None,
+    **kwargs
 ):
     """Recursively annotatates all levels of a marker hierarchy."""
     level += 1
     level_name = "level_" + str(level)
     marker_dict = get_markers(marker_hierarchy)
-    assignments = annotate(adata, marker_dict, group_name, method=method, layer=layer)
+    assignments = annotate(
+        adata, marker_dict, group_name, method=method, layer=layer, **kwargs
+    )
 
     if assignment_levels is None:
         assignment_levels = {}
