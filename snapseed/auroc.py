@@ -31,6 +31,12 @@ def annotate_snap(
         Name of the column in adata.obs that contains the cluster labels
     layer
         Layer in adata to use for expression
+    auc_weight
+        Weight to give to AUROC in the final score
+    expr_weight
+        Weight to give to detection rate in the final score
+    marker_summary_fun
+        Function to use to summarize over markers for the same annotation. Options are "max" and "mean".
     """
     # Reformat marker_dict into binary matrix
     marker_mat = dict_to_binary(marker_dict)
