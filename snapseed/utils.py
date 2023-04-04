@@ -17,9 +17,9 @@ def to_jax_array(x):
     if hasattr(x, "todense"):
         # Currently this is not supported for really large matrices
         # return BCOO.from_scipy_sparse(x).update_layout(n_batch=1, on_inefficient=None)
-        return jnp.array(x.todense())
+        return jnp.asarray(x.todense())
     else:
-        return jnp.array(x)
+        return jnp.asarray(x)
 
 
 @jax.jit
