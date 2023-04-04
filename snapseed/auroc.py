@@ -78,7 +78,15 @@ def annotate_snap(
     return assign_df
 
 
-def auc_expr(adata, group_name, features=None, layer=None):
+def auc_expr(
+    adata,
+    group_name,
+    features=None,
+    layer=None,
+    compute_auroc=True,
+    compute_frac_nonzero=True,
+    compute_frac_nonzero_out=False,
+):
     """Computes AUROC and fraction nonzero for each gene in an adata object."""
     # Turn string groups into integers
     le = preprocessing.LabelEncoder()
@@ -87,10 +95,17 @@ def auc_expr(adata, group_name, features=None, layer=None):
     # Compute AUROC and fraction nonzero
     groups = jnp.array(le.transform(adata.obs[group_name]))
     expr, features = get_expr(adata, features=features, layer=layer)
-    auroc, frac_nonzero = expr_auroc_over_groups(expr, groups)
+    auroc, frac_nonzero, frac_nonzero_out = expr_auroc_over_groups(
+        expr,
+        groups,
+        compute_auroc=compute_auroc,
+        compute_frac_nz=compute_frac_nonzero,
+        compute_frac_nz_out=compute_frac_nonzero_out,
+    )
 
     return dict(
         frac_nonzero=frac_nonzero,
+        frac_nonzero_out=frac_nonzero_out,
         auroc=auroc,
         features=features,
         groups=le.classes_,
