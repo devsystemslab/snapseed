@@ -155,7 +155,7 @@ vmap_auroc = jax.vmap(jit_auroc, in_axes=[1, None])
 
 def numpy_auroc(x, groups):
     jit_auroc_ = partial(jit_auroc, groups=groups)
-    auroc = np.apply_along_axis(jit_auroc_, axis=1, arr=x)
+    auroc = np.apply_along_axis(jit_auroc_, axis=0, arr=x)
     return auroc
 
 
