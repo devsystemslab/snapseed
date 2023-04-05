@@ -174,15 +174,17 @@ def expr_auroc_over_groups(
 
     if apply_fun == "vmap":
         auroc_fun = vmap_auroc
+        fracnz_fun = jit_frac_nonzero
     elif apply_fun == "numpy":
         auroc_fun = numpy_auroc
+        fracnz_fun = frac_nonzero
 
     for group in range(groups.max() + 1):
         if compute_auroc:
             auroc[group, :] = np.array(auroc_fun(expr, groups == group))
         if compute_frac_nz:
-            frac_nz[group, :] = np.array(frac_nonzero(expr[groups == group, :]))
+            frac_nz[group, :] = np.array(fracnz_fun(expr[groups == group, :]))
         if compute_frac_nz_out:
-            frac_nz_out[group, :] = np.array(frac_nonzero(expr[groups != group, :]))
+            frac_nz_out[group, :] = np.array(fracnz_fun(expr[groups != group, :]))
 
     return auroc, frac_nz, frac_nz_out

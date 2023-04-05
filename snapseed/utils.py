@@ -34,9 +34,11 @@ def masked_mean(x, mask):
     return jnp.sum(x * mask, axis=1) / jnp.sum(mask)
 
 
-@jax.jit
 def frac_nonzero(x, axis=0):
     return jnp.mean(x > 0, axis=axis)
+
+
+jit_frac_nonzero = jax.jit(frac_nonzero)
 
 
 def dict_to_binary(d):
