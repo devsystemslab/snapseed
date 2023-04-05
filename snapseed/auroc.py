@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 import jax
 from jax import numpy as jnp
@@ -17,6 +18,7 @@ def annotate_snap(
     auc_weight=0.5,
     expr_weight=0.5,
     marker_summary_fun="max",
+    apply_fun="vmap",
 ):
     """
     Annotate cell types based on AUROC and expression of predefined marker genes.
@@ -37,13 +39,17 @@ def annotate_snap(
         Weight to give to detection rate in the final score
     marker_summary_fun
         Function to use to summarize over markers for the same annotation. Options are "max" and "mean".
+    apply_fun
+        Function to use for applying the auroc function. Options are "vmap" and "numpy". vmap is a lot faster but can cause OOM errors for big matrices.
     """
     # Reformat marker_dict into binary matrix
     marker_mat = dict_to_binary(marker_dict)
 
     # Compute AUROC and fraction nonzero for marker features
     features = marker_mat.columns
-    metrics = auc_expr(adata, group_name, features=features)
+    metrics = auc_expr(
+        adata, group_name, features=features, layer=layer, apply_fun=apply_fun
+    )
 
     marker_mat = marker_mat.loc[:, metrics["features"]]
     if marker_summary_fun == "max":
@@ -86,6 +92,7 @@ def auc_expr(
     compute_auroc=True,
     compute_frac_nonzero=True,
     compute_frac_nonzero_out=False,
+    apply_fun="vmap",
 ):
     """Computes AUROC and fraction nonzero for each gene in an adata object."""
     # Turn string groups into integers
@@ -101,6 +108,7 @@ def auc_expr(
         compute_auroc=compute_auroc,
         compute_frac_nz=compute_frac_nonzero,
         compute_frac_nz_out=compute_frac_nonzero_out,
+        apply_fun=apply_fun,
     )
 
     return dict(
@@ -113,7 +121,6 @@ def auc_expr(
 
 
 @jax.jit
-@partial(jax.vmap, in_axes=[1, None])
 def jit_auroc(x, groups):
     # TODO: compute frac nonzero here to avoid iterating twice
 
@@ -143,22 +150,39 @@ def jit_auroc(x, groups):
     return area
 
 
+vmap_auroc = jax.vmap(jit_auroc, in_axes=[1, None])
+
+
+def numpy_auroc(x, groups):
+    jit_auroc_ = partial(jit_auroc, groups=groups)
+    auroc = np.apply_along_axis(jit_auroc_, axis=1, arr=x)
+    return auroc
+
+
 def expr_auroc_over_groups(
-    expr, groups, compute_auroc=True, compute_frac_nz=True, compute_frac_nz_out=False
+    expr,
+    groups,
+    compute_auroc=True,
+    compute_frac_nz=True,
+    compute_frac_nz_out=False,
+    apply_fun="vmap",
 ):
     """Computes AUROC for each group separately."""
-    auroc = jnp.zeros((groups.max() + 1, expr.shape[1]))
-    frac_nz = jnp.zeros((groups.max() + 1, expr.shape[1]))
-    frac_nz_out = jnp.zeros((groups.max() + 1, expr.shape[1]))
+    auroc = np.zeros((groups.max() + 1, expr.shape[1]))
+    frac_nz = np.zeros((groups.max() + 1, expr.shape[1]))
+    frac_nz_out = np.zeros((groups.max() + 1, expr.shape[1]))
+
+    if apply_fun == "vmap":
+        auroc_fun = vmap_auroc
+    elif apply_fun == "numpy":
+        auroc_fun = numpy_auroc
 
     for group in range(groups.max() + 1):
         if compute_auroc:
-            auroc = auroc.at[group, :].set(jit_auroc(expr, groups == group))
+            auroc[group, :] = np.array(auroc_fun(expr, groups == group))
         if compute_frac_nz:
-            frac_nz = frac_nz.at[group, :].set(frac_nonzero(expr[groups == group, :]))
+            frac_nz[group, :] = np.array(frac_nonzero(expr[groups == group, :]))
         if compute_frac_nz_out:
-            frac_nz_out = frac_nz.at[group, :].set(
-                frac_nonzero(expr[groups != group, :])
-            )
+            frac_nz_out[group, :] = np.array(frac_nonzero(expr[groups != group, :]))
 
     return auroc, frac_nz, frac_nz_out

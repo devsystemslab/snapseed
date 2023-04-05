@@ -32,7 +32,11 @@ def find_markers(adata, group_name, features=None, layer=None):
     expr, features = get_expr(adata, features=features, layer=layer)
     # Compute AUROC and fraction nonzero for marker features
     metrics = auc_expr(
-        adata, group_name, features=features, compute_frac_nonzero_out=True
+        adata,
+        group_name,
+        features=features,
+        compute_frac_nonzero_out=True,
+        apply_fun="numpy",
     )
     # Make dataframes and join
     expr_df = matrix_to_long_df(
