@@ -102,3 +102,48 @@ many = [
     "#f2d71e",
     "#fd4c7a",
 ]
+
+
+# Atlas color palette
+atlas_colors = dict(
+    {
+        "neural_progenitor_cell": "#e9c46a",
+        "telencephalic_npc": "#b77f92",
+        "dorsal_npc": "#D19C2C",
+        "dorsal_org": "#ffe082",
+        "ventral_npc": "#ce93d8",
+        "ventral_org": "#9575cd",
+        "dien_mesen_npc": "#80deea",
+        "diencephalic_npc": "#29b6f6",
+        "mesencephalic_npc": "#26a69a",
+        "retinal_npc": "#ffccbc",
+        "rhombencephalic_npc": "#a5d6a7",
+        "intermediate_progenitor": "#e76f51",
+        "neuron": "#264653",
+        "cortical_excitatory_neuron": "#b44a6e",
+        "deeper_layer_cortical_excitatory_neuron": "#ec407a",
+        "upper_layer_cortical_excitatory_neuron": "#8B1721",
+        "non_cortical_excitatory_neuron": "#f9a825",
+        "diencephalic_excitatory_neuron": "#0277bd",
+        "mesencephalic_excitatory_neuron": "#00897b",
+        "rhombencephalic_excitatory_neuron": "#558b2f",
+        "inhibitory_neuron": "#039be5",
+        "ventral_inhibitory_neuron": "#76448a",
+        "mge_inhibitory_neuron": "#8e44ad",
+        "lge_inhibitory_neuron": "#5c6bc0",
+        "cge_inhibitory_neuron": "#2B254B",
+        "diencephalic_inhibitory_neuron": "#2196f3",
+        "mesencephalic_inhibitory_neuron": "#00acc1",
+        "rhombencephalic_inhibitory_neuron": "#4caf50",
+        "chrorid_plexus_epithelium": "#808b96",
+        "astrocyte": "#f06292",
+        "oligodendrocyte_lineage": "#00bf99",
+        "oligodendrocyte_precursor_cell": "#00FFCC",
+        "mature_oligodendrocyte": "#00604d",
+        "microglia": "#b2ff00",
+        "vascular_endothelial_cell": "#F20000",
+        "mesenchymal_cell": "#a1887f",
+        "neural_crest": "#dce775",
+        "pns_neurons": "#9e9d24",
+    }
+)
