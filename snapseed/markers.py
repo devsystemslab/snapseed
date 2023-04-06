@@ -56,5 +56,9 @@ def find_markers(adata, group_name, features=None, layer=None):
     marker_df = expr_df.merge(auc_df, on=["group", "feature"]).merge(
         out_expr_df, on=["group", "feature"]
     )
+    # Compute detection ratio
+    marker_df["detection_ratio"] = (
+        marker_df["frac_nonzero"] / marker_df["frac_nonzero_out"]
+    )
 
     return marker_df.sort_values(["group", "auroc"], ascending=False)
