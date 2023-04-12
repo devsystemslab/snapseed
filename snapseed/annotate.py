@@ -2,6 +2,7 @@ import pandas as pd
 
 from .trinarize import annotate_cytograph
 from .auroc import annotate_snap
+from .degenes import annotate_degenes
 
 from .utils import get_markers, get_annot_df
 
@@ -74,7 +75,9 @@ def annotate_levels(
     )
 
     for subtype in assignments["class"].unique():
-
+        if subtype == 'na':
+            continue
+            
         if "subtypes" not in marker_hierarchy[subtype].keys():
             continue
 
@@ -126,8 +129,12 @@ def annotate(adata, marker_dict, group_name, method="auroc", layer=None, **kwarg
         assignments = annotate_cytograph(
             adata, marker_dict, group_name, layer=layer, **kwargs
         )
+    elif method == "degenes":
+        assignments = annotate_degenes(
+            adata, marker_dict, group_name, layer=layer, **kwargs
+        )
     else:
-        raise ValueError("Unknown annotation method.")
+        raise ValueError("Unknown annotation method.")    
     # Join cluster-level results with adata
     assignments = assignments.reset_index(names=group_name)
     return assignments
