@@ -32,17 +32,18 @@ def annotate_degenes(
     # level_name = "level_" + str(level)
 
     # TODO magic way for adata only has one cluster
-    if len(adata.obs[group_name].unique()) <= 1:
-        # 1st way
-        # assign_df = annotate_snap(
-        #     adata, marker_dict, group_name, layer=layer
-        # )
-        # 2nd way
-        assign_df = pd.DataFrame({'class':['na'], 'score':[np.nan], 'expr':[1]})
-        assign_df.index=adata.obs[group_name].unique()
-        # 3rd way
-        # assign_df=pd.DataFrame()
-        return assign_df
+    # fixed
+    # if len(adata.obs[group_name].unique()) <= 1:
+    #     # 1st way
+    #     # assign_df = annotate_snap(
+    #     #     adata, marker_dict, group_name, layer=layer
+    #     # )
+    #     # 2nd way
+    #     assign_df = pd.DataFrame({'class':['na'], 'score':[np.nan], 'expr':[1]})
+    #     assign_df.index=adata.obs[group_name].unique()
+    #     # 3rd way
+    #     # assign_df=pd.DataFrame()
+    #     return assign_df
     
     # cal max de
     corr_df = get_bulk_exp(adata, group_name).astype(float).corr()
@@ -57,46 +58,52 @@ def annotate_degenes(
     result_df_apvalue = pd.DataFrame(marker_dict.keys())
     result_df_apvalue = result_df_apvalue.rename(columns={0:'level_name'})
 
-    for cluster in adata.obs[group_name].unique():
-        adata0 = adata.copy()
-        adata0.obs[group_name] = adata0.obs[group_name].astype(str)
+    if len(adata.obs[group_name].unique()) == 1:
+        assign_df = pd.DataFrame(index=adata.obs[group_name].unique())
+        assign_df['max_de'] = 'na'
+        assign_df['de_score'] = 0
 
-        # sc.tl.rank_genes_groups(adata0, group_name, groups=[cluster], 
-        #                         reference=cluster_to_compair[cluster], method='wilcoxon')
-        
-        adata0.obs.loc[adata0.obs[group_name].isin(cluster_to_compair[cluster]), 
-                       group_name] = 'ref'
+    else:
+        for cluster in adata.obs[group_name].unique():
+            adata0 = adata.copy()
+            adata0.obs[group_name] = adata0.obs[group_name].astype(str)
 
-        sc.tl.rank_genes_groups(adata0, group_name, groups=[cluster], 
-                                reference='ref', method='wilcoxon')
+            # sc.tl.rank_genes_groups(adata0, group_name, groups=[cluster], 
+            #                         reference=cluster_to_compair[cluster], method='wilcoxon')
+            
+            adata0.obs.loc[adata0.obs[group_name].isin(cluster_to_compair[cluster]), 
+                        group_name] = 'ref'
 
-        wranks = wrangle_ranks_from_adata(adata0)
+            sc.tl.rank_genes_groups(adata0, group_name, groups=[cluster], 
+                                    reference='ref', method='wilcoxon')
 
-        z_scores=[]
-        adj_pvalss=[]
-        for i in marker_dict:
-            z_scores.append(wranks.loc[wranks.gene.isin(marker_dict[i]), 'z_score'].max())
-            adj_pvalss.append(-np.log10(wranks.loc[wranks.gene.isin(marker_dict[i]), 'adj_pvals']).max())
-            # z_scores.append(wranks.loc[wranks.gene.isin(marker_dict[i]['marker_genes']), 'z_score'].max())
-            # adj_pvalss.append(-np.log10(wranks.loc[wranks.gene.isin(marker_dict[i]['marker_genes']), 'adj_pvals']).max())
+            wranks = wrangle_ranks_from_adata(adata0)
 
-        # result_df_zscore[cluster]=[i*j for i,j in zip(z_scores,adj_pvalss)]
-        result_df_zscore[cluster]=z_scores
-        result_df_apvalue[cluster]=adj_pvalss
+            z_scores=[]
+            adj_pvalss=[]
+            for i in marker_dict:
+                z_scores.append(wranks.loc[wranks.gene.isin(marker_dict[i]), 'z_score'].max())
+                adj_pvalss.append(-np.log10(wranks.loc[wranks.gene.isin(marker_dict[i]), 'adj_pvals']).max())
+                # z_scores.append(wranks.loc[wranks.gene.isin(marker_dict[i]['marker_genes']), 'z_score'].max())
+                # adj_pvalss.append(-np.log10(wranks.loc[wranks.gene.isin(marker_dict[i]['marker_genes']), 'adj_pvals']).max())
 
-    z_df = result_df_zscore.set_index('level_name')
-    cluster2ct = z_df.idxmax().to_dict()
+            # result_df_zscore[cluster]=[i*j for i,j in zip(z_scores,adj_pvalss)]
+            result_df_zscore[cluster]=z_scores
+            result_df_apvalue[cluster]=adj_pvalss
 
-    has_na = False
-    # TODO add has_na
-    if has_na:    
-        for i in cluster2ct:
-            if i in z_df[z_df.max(axis=1)<1].index:
-                cluster2ct[i] = 'na'
-                
-    assign_df = pd.DataFrame(pd.Series(cluster2ct))
-    assign_df = assign_df.rename(columns={0:'max_de'})
-    assign_df['de_score'] = z_df.max()
+        z_df = result_df_zscore.set_index('level_name')
+        cluster2ct = z_df.idxmax().to_dict()
+
+        has_na = False
+        # TODO add has_na
+        if has_na:    
+            for i in cluster2ct:
+                if i in z_df[z_df.max(axis=1)<1].index:
+                    cluster2ct[i] = 'na'
+                    
+        assign_df = pd.DataFrame(pd.Series(cluster2ct))
+        assign_df = assign_df.rename(columns={0:'max_de'})
+        assign_df['de_score'] = z_df.max()
 
     # cal max exp
     raw_bulk = get_bulk_exp(adata, group_name, 'raw')
@@ -117,7 +124,7 @@ def annotate_degenes(
 
 
     # merge de and exp
-    assign_df = pd.merge(assign_df,max_exp_df, left_index=True, right_index=True)
+    assign_df = pd.merge(assign_df, max_exp_df, left_index=True, right_index=True)
 
     classs=[]
     for index,row in assign_df.iterrows():
