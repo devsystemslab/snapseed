@@ -32,7 +32,6 @@ def annotate_degenes(
     # level_name = "level_" + str(level)
 
     # TODO magic way for adata only has one cluster
-    print(adata.obs[group_name].unique())
     if len(adata.obs[group_name].unique()) <= 1:
         # 1st way
         # assign_df = annotate_snap(
@@ -45,6 +44,7 @@ def annotate_degenes(
         # assign_df=pd.DataFrame()
         return assign_df
     
+    # cal max de
     corr_df = get_bulk_exp(adata, group_name).astype(float).corr()
     corr_df = 1 - corr_df
 
@@ -95,8 +95,38 @@ def annotate_degenes(
                 cluster2ct[i] = 'na'
                 
     assign_df = pd.DataFrame(pd.Series(cluster2ct))
-    assign_df = assign_df.rename(columns={0:'class'})
-    assign_df['score'] = z_df.max()
+    assign_df = assign_df.rename(columns={0:'max_de'})
+    assign_df['de_score'] = z_df.max()
+
+    # cal max exp
+    raw_bulk = get_bulk_exp(adata, group_name, 'raw')
+    max_exp=pd.DataFrame(index=raw_bulk.columns)
+    for cell in marker_dict:
+        if sum(raw_bulk.index.isin(marker_dict[cell]))>0:
+            good_markers = [i for i in marker_dict[cell] if i in raw_bulk.index]
+            max_exp[cell] = raw_bulk.loc[good_markers].max()
+        else:
+            max_exp[cell] = 0
+
+    s = max_exp.select_dtypes(include='object').columns
+    max_exp[s] = max_exp[s].astype("float")
+    max_exp_df = pd.DataFrame(max_exp.max(axis=1))
+    max_exp_df = max_exp_df.rename(columns={0:'exp_score'})
+
+    max_exp_df['max_exp'] = max_exp.idxmax(axis=1)
+
+
+    # merge de and exp
+    assign_df = pd.merge(assign_df,max_exp_df, left_index=True, right_index=True)
+
+    classs=[]
+    for index,row in assign_df.iterrows():
+        if row['de_score']>1:
+            classs.append(row['max_de'])
+        else:
+            classs.append(row['max_exp'])
+            
+    assign_df['class'] = classs
 
     # TODO magic way to avoid get_annot_df error
     assign_df['expr'] = 1
@@ -127,11 +157,17 @@ def wrangle_ranks_from_adata(adata):
         marker_df = marker_df.append(concat)
     return marker_df
 
-def get_bulk_exp(adata, bulk_labels):
-    res = pd.DataFrame(columns=adata.var_names, index=adata.obs[bulk_labels].cat.categories)                                                                                                 
-
+def get_bulk_exp(adata, bulk_labels, layer='var'):
+    if layer=='raw':
+        res = pd.DataFrame(columns=adata.raw.var_names, index=adata.obs[bulk_labels].cat.categories)
+    else:
+        res = pd.DataFrame(columns=adata.var_names, index=adata.obs[bulk_labels].cat.categories)                                                                                                 
+    
     for clust in adata.obs[bulk_labels].cat.categories: 
-        res.loc[clust] = adata[adata.obs[bulk_labels].isin([clust]),:].X.mean(0)
+        if layer=='raw':
+            res.loc[clust] = adata[adata.obs[bulk_labels].isin([clust]),:].raw.X.mean(0)
+        else:
+            res.loc[clust] = adata[adata.obs[bulk_labels].isin([clust]),:].X.mean(0)
 
     res.index=adata.obs[bulk_labels].cat.categories
 
