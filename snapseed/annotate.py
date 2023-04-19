@@ -59,7 +59,7 @@ def annotate_levels(
     level += 1
     level_name = "level_" + str(level)
     marker_dict = get_markers(marker_hierarchy)
-    assignments = annotate(adata, marker_dict, group_name, method=method, layer=layer)
+    assignments = annotate(adata, marker_dict, group_name, method=method, layer=layer, level=level)
 
     if assignment_levels is None:
         assignment_levels = {}
@@ -98,7 +98,7 @@ def annotate_levels(
     return assignment_levels
 
 
-def annotate(adata, marker_dict, group_name, method="auroc", layer=None, **kwargs):
+def annotate(adata, marker_dict, group_name, method="auroc", layer=None, level=None, **kwargs):
     """
     Annotate clusters based on a manually defined cell type markers.
 
@@ -128,7 +128,7 @@ def annotate(adata, marker_dict, group_name, method="auroc", layer=None, **kwarg
         )
     elif method == "degenes":
         assignments = annotate_degenes(
-            adata, marker_dict, group_name, layer=layer, **kwargs
+            adata, marker_dict, group_name, layer=layer, level=None, **kwargs
         )
     else:
         raise ValueError("Unknown annotation method.")    

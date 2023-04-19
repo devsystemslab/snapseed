@@ -14,6 +14,7 @@ def annotate_degenes(
     marker_dict,
     group_name,
     layer=None,
+    level=None,
     ):
     """
     Annotate cell types based on differentially expressed (DE) marker genes.
@@ -49,7 +50,11 @@ def annotate_degenes(
     corr_df = get_bulk_exp(adata, group_name).astype(float).corr()
     corr_df = 1 - corr_df
 
-    ntop = math.ceil(len(adata.obs[group_name].unique())/10)
+    if level==1:
+        dist_pect=10
+    else:
+        dist_pect=2
+    ntop = math.ceil(len(adata.obs[group_name].unique())/dist_pect)
     cluster_to_compair = corr_df.apply(lambda s: s.abs().nlargest(ntop).index.tolist(), axis=1).to_dict()
 
     result_df_zscore = pd.DataFrame(marker_dict.keys())
@@ -128,11 +133,13 @@ def annotate_degenes(
 
     classs=[]
     for index,row in assign_df.iterrows():
-        if row['de_score']>1:
+        if row['de_score'] > 1:
             classs.append(row['max_de'])
-        else:
+        elif row['exp_score'] > 0:
             classs.append(row['max_exp'])
-            
+        else:
+            classs.append('na')
+
     assign_df['class'] = classs
 
     # TODO magic way to avoid get_annot_df error
