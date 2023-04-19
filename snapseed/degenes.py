@@ -54,6 +54,7 @@ def annotate_degenes(
         dist_pect=10
     else:
         dist_pect=2
+        
     ntop = math.ceil(len(adata.obs[group_name].unique())/dist_pect)
     cluster_to_compair = corr_df.apply(lambda s: s.abs().nlargest(ntop).index.tolist(), axis=1).to_dict()
 
