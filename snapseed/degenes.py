@@ -46,6 +46,16 @@ def annotate_degenes(
     #     # assign_df=pd.DataFrame()
     #     return assign_df
     
+
+    # for celltype in marker_dict['subtypes']:
+    #     subgenes = marker_dict['subtypes'][celltype]
+    #     if marker_dict['subtypes'][celltype]['marker_genes'] == []:
+    #         markers_all=[]
+    #         for i in marker_dict['subtypes']:
+    #             for j in marker_dict['subtypes'][i]['marker_genes']:
+    #                 markers_all.append(j)
+    #         marker_dict['subtypes'][celltype]['marker_genes'] = markers_all
+
     # cal max de
     corr_df = get_bulk_exp(adata, group_name).astype(float).corr()
     corr_df = 1 - corr_df
