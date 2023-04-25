@@ -87,7 +87,7 @@ def read_yaml(file):
     return marker_dict
 
 
-def get_annot_df(x, group_name, min_expr=0.2):
+def get_annot_df(x, group_name, min_expr=0.1):
     # Get valid annots from each level
     annot_list = []
     for k, v in x.items():
