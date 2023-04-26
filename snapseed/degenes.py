@@ -144,8 +144,12 @@ def annotate_degenes(
 
     classs=[]
     for index,row in assign_df.iterrows():
-        if row['de_score'] > 1:
+        if row['de_score'] > 2:
             classs.append(row['max_de'])
+        elif row['de_score'] > 1 and row['exp_score'] < 2:
+            classs.append(row['max_de'])
+        elif row['de_score'] > 1 and row['exp_score'] > 2:
+            classs.append(row['max_exp'])
         elif row['exp_score'] > 0:
             classs.append(row['max_exp'])
         else:
