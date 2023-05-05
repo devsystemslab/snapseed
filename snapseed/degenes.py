@@ -143,15 +143,30 @@ def annotate_degenes(
     assign_df = pd.merge(assign_df, max_exp_df, left_index=True, right_index=True)
 
     classs=[]
+    # for index,row in assign_df.iterrows():
+    #     if row['de_score'] > 2:
+    #         classs.append(row['max_de'])
+    #     elif row['de_score'] > 1 and row['exp_score'] < 2:
+    #         classs.append(row['max_de'])
+    #     elif row['de_score'] > 1 and row['exp_score'] > 2:
+    #         classs.append(row['max_exp'])
+    #     elif row['exp_score'] > 0:
+    #         classs.append(row['max_exp'])
+    #     else:
+    #         classs.append('na')
     for index,row in assign_df.iterrows():
         if row['de_score'] > 2:
             classs.append(row['max_de'])
-        elif row['de_score'] > 1 and row['exp_score'] < 2:
-            classs.append(row['max_de'])
-        elif row['de_score'] > 1 and row['exp_score'] > 2:
-            classs.append(row['max_exp'])
-        elif row['exp_score'] > 0:
-            classs.append(row['max_exp'])
+        elif row['de_score'] > 1:
+            if row['exp_score'] > 2:
+                classs.append(row['max_exp'])
+            else:
+                classs.append(row['max_de'])
+        elif row['de_score'] > 0:
+            if row['exp_score'] > 0.5:
+                classs.append(row['max_exp'])
+            else:
+                classs.append('na')
         else:
             classs.append('na')
 
