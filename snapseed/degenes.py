@@ -92,7 +92,7 @@ def annotate_degenes(
 
     groups = le.classes_
     
-    expr, features = get_expr(adata, features=features, layer='raw')
+    expr, features = get_expr(adata, features=features, layer=layer)
 
     aurocs = jnp.zeros((len(groups), len(features)))
     frac_nzs = jnp.zeros((len(groups), len(features)))
