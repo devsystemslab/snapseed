@@ -106,25 +106,25 @@ def annotate_degenes(
     frac_nzs.columns=groups
     frac_nzs.index = features
 
-    for cluster in groups:
+    for group in groups:
         
-        cluster = str(cluster)
+        group = str(group)
         
         adata0 = adata.copy()
         adata0.obs[group_name] = adata0.obs[group_name].astype(str)
 
-        if cluster not in cluster_to_compair:
-            adata0 = adata0[adata0.obs[group_name].isin([cluster])]
+        if group not in cluster_to_compair:
+            adata0 = adata0[adata0.obs[group_name].isin([group])]
 
         else:
-            adata0.obs.loc[adata0.obs[group_name].isin(cluster_to_compair[cluster]), 
+            adata0.obs.loc[adata0.obs[group_name].isin(cluster_to_compair[group]), 
                         group_name] = 'ref'
-            adata0 = adata0[adata0.obs[group_name].isin(['ref', cluster])]
+            adata0 = adata0[adata0.obs[group_name].isin(['ref', group])]
 
         metric = auc_expr(adata0, group_name, features=features)
-        aurocs[cluster] = metric['auroc'][metric['groups']==cluster][0]
-        frac_nzs[cluster] = metric['frac_nonzero'][metric['groups']==cluster][0]
-        allgroups.append(cluster)
+        aurocs[group] = metric['auroc'][metric['groups']==group][0]
+        frac_nzs[group] = metric['frac_nonzero'][metric['groups']==group][0]
+        allgroups.append(group)
 
     metrics={'frac_nonzero':frac_nzs,
             'auroc':aurocs,
@@ -180,21 +180,22 @@ def get_bulk_exp(adata, bulk_labels, layer='var'):
 
     return res.T
 
-
 def get_expr(adata, features=None, layer=None):
     """Get expression matrix from adata object"""
+
+    if layer == 'raw' or layer == None:
+        adata = adata.raw.to_adata()
+
     if features is not None:
         # intersect with adata features
         features = list(set(features) & set(adata.var_names))
         adata = adata[:, match(features, adata.var_names.tolist())]
 
-
-    if layer == 'raw':
-        expr = jnp.array(to_dense(adata.raw.X))
-    elif layer is not None:
-        expr = jnp.array(to_dense(adata.layers[layer]))
-    else:
+    if layer == 'raw' or layer == None:
         expr = jnp.array(to_dense(adata.X))
+
+    else:
+        expr = jnp.array(to_dense(adata.layers[layer]))
 
     return expr, features
 
