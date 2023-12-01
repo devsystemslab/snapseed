@@ -127,7 +127,10 @@ def annotate_degenes(
         allgroups.append(group)
 
     aurocs=aurocs.fillna(0.5) ### MAGIC TODO MAY PROBLEM
-    
+    ### The PDAC Hwang_NatGenet_2022 GSE202051_003 sample
+    ### Level 2 mesenchyme only have 1 cluster lead error
+    ### KeyError: "None of [Float64Index([nan], dtype='float64')] are in the [columns]"
+
     metrics={'frac_nonzero':frac_nzs,
             'auroc':aurocs,
             'features':features,
