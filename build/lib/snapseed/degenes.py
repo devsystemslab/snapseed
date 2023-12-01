@@ -126,6 +126,8 @@ def annotate_degenes(
         frac_nzs[group] = metric['frac_nonzero'][metric['groups']==group][0]
         allgroups.append(group)
 
+    aurocs=aurocs.fillna(0.5) ### MAGIC TODO MAY PROBLEM
+    
     metrics={'frac_nonzero':frac_nzs,
             'auroc':aurocs,
             'features':features,
