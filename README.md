@@ -2,6 +2,8 @@
 
 Snapseed annotates single-cell datasets based on manually defined sets of marker genes for individual cell types or cell type hierarchies. It is fast and simple to accelerate annotation of very large datasets.
 
+--> snapseed is now integrated into [HNOCA-tools](https://github.com/devsystemslab/HNOCA-tools)
+
 
 ## Quick start
 
